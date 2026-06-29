@@ -1,0 +1,527 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FGCU - proof of concept - FlipBook</title>
+
+  <!-- StPageFlip / page-flip CSS -->
+  <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/css/page-flip.css"
+  />
+
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --text: #1f2933;
+      --muted: #5f6b7a;
+      --border: #b3b3b3;
+      --focus: #174a7c;
+      --gray-accent: #b3b3b3;
+      --fgcu-navy: #003865;
+      --fgcu-gold: #fdb913;
+      --fgcu-green: #4f7942;
+      --fgcu-disabled: #d7d7d7;
+      --fgcu-dark-gray: #4a4a4a;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .page-wrapper {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 2rem 1rem;
+    }
+
+    .intro {
+      max-width: 820px;
+      margin-bottom: 1.25rem;
+    }
+
+    .intro h1 {
+      margin: 0 0 0.5rem;
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+    }
+
+    .intro p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .book-frame {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      overflow: hidden;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      align-items: center;
+      padding: 0.85rem 1rem;
+      background: #f8fafc;
+      border-top: 1px solid var(--border);
+    }
+
+    button,
+    .pdf-link {
+      border: 1px solid var(--fgcu-navy);
+      background: var(--fgcu-navy);
+      color: #fff;
+      padding: 0.65rem 0.9rem;
+      border-radius: 0.35rem;
+      cursor: pointer;
+      font-size: 1rem;
+      line-height: 1.2;
+      text-decoration: none;
+    }
+
+    button:hover,
+    .pdf-link:hover {
+      background: #002b4d;
+    }
+
+    button:focus,
+    .pdf-link:focus {
+      outline: 3px solid rgba(253, 185, 19, 0.35);
+      outline-offset: 2px;
+    }
+
+    button:disabled,
+    .book-nav-btn:disabled {
+      background: var(--fgcu-disabled);
+      border-color: var(--fgcu-disabled);
+      color: #6b6b6b;
+      cursor: not-allowed;
+      opacity: 0.9;
+    }
+
+    #status {
+      min-height: 1.5rem;
+      font-size: 0.95rem;
+      color: var(--muted);
+      margin-left: 0.5rem;
+    }
+
+    .book-shell {
+      position: relative;
+      isolation: isolate;
+      padding: 1rem 3rem;
+      overflow: hidden;
+      min-height: 500px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--gray-accent);
+    }
+
+    .book-nav-btn {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 2;
+      width: 48px;
+      border: 1px solid var(--fgcu-dark-gray);
+      background: var(--fgcu-dark-gray);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 600;
+      padding: 0;
+    }
+
+    .book-nav-btn:hover {
+      background: #303030;
+    }
+
+    .book-nav-btn.left {
+      left: 0;
+      border-radius: 0 0.65rem 0.65rem 0;
+      background: var(--fgcu-dark-gray);
+      border-color: var(--fgcu-dark-gray);
+    }
+
+    .book-nav-btn.right {
+      right: 0;
+      border-radius: 0.65rem 0 0 0.65rem;
+      background: var(--fgcu-dark-gray);
+      border-color: var(--fgcu-dark-gray);
+    }
+
+    .book-nav-btn.left:hover {
+      background: #303030;
+      border-color: #303030;
+    }
+
+    .book-nav-btn.right:hover {
+      background: #303030;
+      border-color: #303030;
+    }
+
+    .cover-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      display: none;
+    }
+
+    .cover-zone {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      background: rgba(0, 0, 0, 0.5);
+      border: 3px solid transparent;
+      box-sizing: border-box;
+      pointer-events: auto;
+      touch-action: manipulation;
+      cursor: pointer;
+      z-index: 4;
+    }
+
+    .cover-zone.left {
+      left: 0;
+      border-color: red;
+    }
+
+    .cover-zone.right {
+      right: 0;
+      border-color: green;
+    }
+
+    #flipbook {
+      position: relative;
+      z-index: 1;
+      margin: 0 auto;
+      border: 40px solid var(--gray-accent);
+    }
+
+    .page {
+      background: white;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.16);
+      overflow: hidden;
+    }
+
+    .page canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .fallback-note {
+      max-width: 820px;
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .fallback-note strong {
+      color: var(--text);
+    }
+
+    .error {
+      max-width: 760px;
+      padding: 1rem;
+      border: 1px solid #d99;
+      background: #fff5f5;
+      color: #741b1b;
+      border-radius: 0.5rem;
+    }
+
+    @media (max-width: 767px) {
+      .page-wrapper {
+        padding: 0;
+      }
+
+      .intro {
+        padding: 1rem 1rem 0;
+      }
+
+      .book-frame {
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        width: 100%;
+        background: transparent;
+      }
+
+      .cover-overlay {
+        display: block;
+      }
+
+      .cover-zone {
+        background: transparent;
+        border: 0;
+      }
+
+      .toolbar {
+        align-items: stretch;
+        padding: 0.85rem 1rem;
+      }
+
+      button,
+      .pdf-link {
+        width: 100%;
+        text-align: center;
+      }
+
+      #status {
+        width: 100%;
+        margin-left: 0;
+      }
+
+      .book-shell {
+        min-height: 420px;
+        padding: 0.5rem 2.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page-wrapper">
+    <section class="intro">
+      <h1>FGCU - proof of concept - FlipBook</h1>
+      <p>
+        This demo loads <strong>FFSS.pdf</strong> by default, renders each page with PDF.js,
+        and displays the pages in an open-source page-flip interface.
+      </p>
+    </section>
+
+    <div class="book-frame">
+      <section class="book-shell" aria-label="PDF flipbook viewer">
+        <button type="button" class="book-nav-btn left" id="bookPrevBtn" aria-label="Previous page">←</button>
+        <button type="button" class="book-nav-btn right" id="bookNextBtn" aria-label="Next page">→</button>
+        <div class="cover-overlay" aria-hidden="true">
+          <div class="cover-zone left"></div>
+          <div class="cover-zone right"></div>
+        </div>
+        <div id="flipbook"></div>
+      </section>
+
+      <div class="toolbar" aria-label="Flipbook controls">
+        <button type="button" id="prevBtn">Previous Page</button>
+        <button type="button" id="nextBtn">Next Page</button>
+        <button type="button" id="fullscreenBtn">Fullscreen</button>
+
+        <a class="pdf-link" href="FFSS.pdf" target="_blank" rel="noopener">
+          Open Accessible PDF
+        </a>
+
+        <span id="status" aria-live="polite">Loading PDF…</span>
+      </div>
+    </div>
+
+    <p class="fallback-note">
+      <strong>Accessibility note:</strong> this flipbook is a visual enhancement. Keep the
+      direct PDF link available, and make sure the source PDF itself remains accessible.
+    </p>
+  </main>
+
+  <!-- StPageFlip / page-flip -->
+  <script src="https://cdn.jsdelivr.net/npm/page-flip@2.0.7/dist/js/page-flip.browser.min.js"></script>
+
+  <!-- PDF.js and flipbook setup -->
+  <script type="module">
+    import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs";
+
+    // Default PDF. Keep this HTML file and FFSS.pdf in the same folder.
+    const pdfUrl = "FFSS.pdf";
+
+    const flipbookEl = document.getElementById("flipbook");
+    const statusEl = document.getElementById("status");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const bookPrevBtn = document.getElementById("bookPrevBtn");
+    const bookNextBtn = document.getElementById("bookNextBtn");
+    const fullscreenBtn = document.getElementById("fullscreenBtn");
+    const bookShell = document.querySelector(".book-shell");
+    const coverZones = document.querySelectorAll(".cover-zone");
+
+    let pageFlip = null;
+
+    async function renderPdfToFlipbook(url) {
+      try {
+        const loadingTask = pdfjsLib.getDocument(url);
+        const pdf = await loadingTask.promise;
+
+        statusEl.textContent = `Rendering ${pdf.numPages} pages…`;
+
+        const pages = [];
+
+        for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+          const page = await pdf.getPage(pageNumber);
+
+          // Scale controls render sharpness. Higher values are sharper but heavier.
+          const viewport = page.getViewport({ scale: 1.6 });
+
+          const canvas = document.createElement("canvas");
+          const context = canvas.getContext("2d", { alpha: false });
+
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          canvas.setAttribute("aria-label", `PDF page ${pageNumber}`);
+
+          await page.render({
+            canvasContext: context,
+            viewport: viewport
+          }).promise;
+
+          const pageDiv = document.createElement("div");
+          pageDiv.className = "page";
+          pageDiv.setAttribute("data-density", "soft");
+          pageDiv.appendChild(canvas);
+
+          pages.push(pageDiv);
+        }
+
+        initializeFlipbook(pages);
+        updateStatus();
+      } catch (error) {
+        console.error(error);
+        statusEl.textContent = "Could not load the PDF.";
+        flipbookEl.innerHTML = `
+          <div class="error">
+            <strong>PDF could not be loaded.</strong><br>
+            Make sure this HTML file and <code>FFSS.pdf</code> are in the same folder,
+            and run the page from a web server rather than opening the HTML file directly.
+          </div>
+        `;
+      }
+    }
+
+    function initializeFlipbook(pages) {
+      flipbookEl.innerHTML = "";
+
+      pages.forEach((page) => {
+        flipbookEl.appendChild(page);
+      });
+
+      pageFlip = new St.PageFlip(flipbookEl, {
+        width: 420,
+        height: 594,
+        size: "stretch",
+        minWidth: 280,
+        maxWidth: 540,
+        minHeight: 396,
+        maxHeight: 764,
+        maxShadowOpacity: 0.35,
+        showCover: false,
+        mobileScrollSupport: false,
+        usePortrait: true,
+        flippingTime: 700,
+        drawShadow: true
+      });
+
+      pageFlip.loadFromHTML(document.querySelectorAll(".page"));
+
+      pageFlip.on("flip", () => {
+        updateStatus();
+      });
+    }
+
+    function updateNextButtons() {
+      if (!pageFlip) return;
+
+      const currentPage = pageFlip.getCurrentPageIndex() + 1;
+      const totalPages = pageFlip.getPageCount();
+      const shouldDisableNext = currentPage >= totalPages - 1;
+
+      [nextBtn, bookNextBtn].forEach((button) => {
+        button.disabled = shouldDisableNext;
+        button.classList.toggle("is-disabled", shouldDisableNext);
+      });
+    }
+
+    function updateStatus() {
+      if (!pageFlip) return;
+
+      const currentPage = pageFlip.getCurrentPageIndex() + 1;
+      const totalPages = pageFlip.getPageCount();
+      statusEl.textContent = `Page ${currentPage} of ${totalPages}`;
+      updateNextButtons();
+    }
+
+    function flipPage(direction) {
+      if (!pageFlip) return;
+
+      if (direction === "next") {
+        pageFlip.flipNext();
+      } else if (direction === "prev") {
+        pageFlip.flipPrev();
+      }
+    }
+
+    prevBtn.addEventListener("click", () => flipPage("prev"));
+    bookPrevBtn.addEventListener("click", () => flipPage("prev"));
+
+    nextBtn.addEventListener("click", () => flipPage("next"));
+    bookNextBtn.addEventListener("click", () => flipPage("next"));
+
+    updateNextButtons();
+
+    coverZones.forEach((zone) => {
+      const handleZoneInteraction = (event) => {
+        if (zone.classList.contains("right")) {
+          flipPage("next");
+        } else {
+          flipPage("prev");
+        }
+      };
+
+      zone.addEventListener("click", handleZoneInteraction);
+      zone.addEventListener("dblclick", handleZoneInteraction);
+      zone.addEventListener("touchend", handleZoneInteraction);
+    });
+
+    fullscreenBtn.addEventListener("click", async () => {
+      try {
+        if (!document.fullscreenElement) {
+          await bookShell.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch (error) {
+        console.error("Fullscreen failed:", error);
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (!pageFlip) return;
+
+      if (event.key === "ArrowLeft") {
+        pageFlip.flipPrev();
+      }
+
+      if (event.key === "ArrowRight") {
+        pageFlip.flipNext();
+      }
+    });
+
+    renderPdfToFlipbook(pdfUrl);
+  </script>
+</body>
+</html>
