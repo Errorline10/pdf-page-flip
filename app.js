@@ -58,7 +58,7 @@ async function renderPdfToFlipbook(url) {
     console.error(error);
     statusEl.textContent = "Could not load the PDF.";
     flipbookEl.innerHTML = `
-      <div class="error">
+      <div class="error" role="alert">
         <strong>PDF could not be loaded.</strong><br>
         Make sure this HTML file and <code>FFSS.pdf</code> are in the same folder,
         and run the page from a web server rather than opening the HTML file directly.

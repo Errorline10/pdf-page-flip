@@ -12,9 +12,10 @@
 </head>
 
 <body>
-  <main class="page-wrapper">
-    <section class="intro">
-      <h1>FGCU - proof of concept - FlipBook</h1>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <main class="page-wrapper" id="main-content">
+    <section class="intro" aria-labelledby="book-title">
+      <h1 id="book-title">FGCU - proof of concept - FlipBook</h1>
       <p>
         This demo loads <strong>FFSS.pdf</strong> by default, renders each page with PDF.js,
         and displays the pages in an open-source page-flip interface.
@@ -22,33 +23,34 @@
     </section>
 
     <div class="book-frame">
-      <div class="book-topbar" aria-label="Book top controls">
-        <button type="button" id="fullscreenBtn">Fullscreen</button>
+      <div class="book-topbar" role="group" aria-label="Book top controls">
+        <button type="button" id="fullscreenBtn" aria-controls="flipbook" aria-label="Toggle fullscreen view">Fullscreen</button>
 
-        <a class="pdf-link" href="FFSS.pdf" target="_blank" rel="noopener">
+        <a class="pdf-link" href="FFSS.pdf" target="_blank" rel="noopener noreferrer" aria-label="Open the PDF in a new tab">
           Open Accessible PDF
         </a>
       </div>
 
-      <div class="status-wrapper status-wrapper--top">
+      <div class="status-wrapper status-wrapper--top" aria-hidden="true">
         &nbsp;
       </div>
-      <section class="book-shell" aria-label="PDF flipbook viewer">
+      <section class="book-shell" role="region" aria-label="PDF flipbook viewer" aria-describedby="flipbook-help">
         <button type="button" class="book-nav-btn left" id="bookPrevBtn" aria-label="Previous page">←</button>
         <button type="button" class="book-nav-btn right" id="bookNextBtn" aria-label="Next page">→</button>
         <div class="cover-overlay" aria-hidden="true">
           <div class="cover-zone left"></div>
           <div class="cover-zone right"></div>
         </div>
-        <div id="flipbook"></div>
+        <p id="flipbook-help" class="sr-only">Use the previous and next buttons or the left and right arrow keys to move through the book.</p>
+        <div id="flipbook" role="group" aria-label="Flipbook pages" tabindex="0"></div>
       </section>
-      <div class="status-wrapper status-wrapper--bottom">
+      <div class="status-wrapper status-wrapper--bottom" role="status" aria-live="polite" aria-atomic="true">
         <span id="status">Loading PDF…</span>
       </div>
 
-      <div class="toolbar" aria-label="Flipbook controls">
-        <button type="button" id="prevBtn">Previous Page</button>
-        <button type="button" id="nextBtn">Next Page</button>
+      <div class="toolbar" role="group" aria-label="Flipbook controls">
+        <button type="button" id="prevBtn" aria-controls="flipbook">Previous Page</button>
+        <button type="button" id="nextBtn" aria-controls="flipbook">Next Page</button>
       </div>
     </div>
 
