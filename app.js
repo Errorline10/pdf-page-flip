@@ -11,11 +11,24 @@ const prevBtn = document.getElementById("prevBtn");
 const nextBtn = document.getElementById("nextBtn");
 const bookPrevBtn = document.getElementById("bookPrevBtn");
 const bookNextBtn = document.getElementById("bookNextBtn");
+const zoomOutBtn = document.getElementById("zoomOutBtn");
+const resetZoomBtn = document.getElementById("resetZoomBtn");
+const zoomInBtn = document.getElementById("zoomInBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const bookShell = document.querySelector(".book-shell");
 const coverZones = document.querySelectorAll(".cover-zone");
 
 let pageFlip = null;
+let zoomLevel = 1;
+let panX = 0;
+let panY = 0;
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let dragOriginX = 0;
+let dragOriginY = 0;
+const minZoom = 1;
+const maxZoom = 1.6;
 
 async function renderPdfToFlipbook(url) {
   try {
@@ -116,12 +129,69 @@ function updateNavigationButtons() {
   });
 }
 
+function updateZoomButtons() {
+  zoomOutBtn.disabled = zoomLevel <= minZoom;
+  zoomInBtn.disabled = zoomLevel >= maxZoom;
+  resetZoomBtn.disabled = zoomLevel === 1;
+}
+
+function applyTransform() {
+  flipbookEl.style.setProperty("--flipbook-pan-x", `${panX}px`);
+  flipbookEl.style.setProperty("--flipbook-pan-y", `${panY}px`);
+  flipbookEl.style.setProperty("--flipbook-zoom", zoomLevel.toFixed(2));
+}
+
+function setZoom(nextZoom) {
+  zoomLevel = Math.min(maxZoom, Math.max(minZoom, nextZoom));
+  if (Math.abs(zoomLevel - 1) <= 0.0001) {
+    panX = 0;
+    panY = 0;
+  }
+  applyTransform();
+  bookShell.classList.toggle("is-zoomed", Math.abs(zoomLevel - 1) > 0.0001);
+  updateZoomButtons();
+  updateStatus();
+}
+
+function handlePanStart(event) {
+  if (!bookShell.classList.contains("is-zoomed") || event.button !== undefined && event.button !== 0) {
+    return;
+  }
+
+  isDragging = true;
+  bookShell.classList.add("is-dragging");
+  dragStartX = event.clientX;
+  dragStartY = event.clientY;
+  dragOriginX = panX;
+  dragOriginY = panY;
+  event.preventDefault();
+}
+
+function handlePanMove(event) {
+  if (!isDragging) return;
+
+  panX = dragOriginX + (event.clientX - dragStartX);
+  panY = dragOriginY + (event.clientY - dragStartY);
+  applyTransform();
+  event.preventDefault();
+}
+
+function handlePanEnd() {
+  if (!isDragging) return;
+
+  isDragging = false;
+  bookShell.classList.remove("is-dragging");
+}
+
 function updateStatus() {
-  if (!pageFlip) return;
+  if (!pageFlip) {
+    statusEl.textContent = `Zoom ${Math.round(zoomLevel * 100)}%`;
+    return;
+  }
 
   const currentPage = pageFlip.getCurrentPageIndex() + 1;
   const totalPages = pageFlip.getPageCount();
-  statusEl.textContent = `Page ${currentPage} of ${totalPages}`;
+  statusEl.textContent = `Page ${currentPage} of ${totalPages} • Zoom ${Math.round(zoomLevel * 100)}%`;
   updateNavigationButtons();
 }
 
@@ -140,7 +210,15 @@ bookPrevBtn.addEventListener("click", () => flipPage("prev"));
 
 nextBtn.addEventListener("click", () => flipPage("next"));
 bookNextBtn.addEventListener("click", () => flipPage("next"));
+zoomOutBtn.addEventListener("click", () => setZoom(1));
+resetZoomBtn.addEventListener("click", () => setZoom(1));
+zoomInBtn.addEventListener("click", () => setZoom(zoomLevel + 0.1));
+bookShell.addEventListener("pointerdown", handlePanStart);
+document.addEventListener("pointermove", handlePanMove);
+document.addEventListener("pointerup", handlePanEnd);
+document.addEventListener("pointercancel", handlePanEnd);
 
+setZoom(1);
 updateNavigationButtons();
 
 coverZones.forEach((zone) => {
@@ -178,6 +256,21 @@ document.addEventListener("keydown", (event) => {
 
   if (event.key === "ArrowRight") {
     pageFlip.flipNext();
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key === "+") {
+    event.preventDefault();
+    setZoom(zoomLevel + 0.1);
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key === "-") {
+    event.preventDefault();
+    setZoom(1);
+  }
+
+  if ((event.ctrlKey || event.metaKey) && event.key === "0") {
+    event.preventDefault();
+    setZoom(1);
   }
 });
 

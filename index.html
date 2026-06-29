@@ -49,8 +49,15 @@
       </div>
 
       <div class="toolbar" role="group" aria-label="Flipbook controls">
-        <button type="button" id="prevBtn" aria-controls="flipbook">Previous Page</button>
-        <button type="button" id="nextBtn" aria-controls="flipbook">Next Page</button>
+        <div class="zoom-group">
+          <button type="button" class="zoom-btn" id="zoomOutBtn" aria-label="Zoom out">−</button>
+          <button type="button" class="zoom-btn" id="zoomInBtn" aria-label="Zoom in">+</button>
+          <button type="button" class="zoom-btn zoom-btn--text" id="resetZoomBtn" aria-label="Reset zoom">Reset zoom</button>
+        </div>
+        <div class="page-group">
+          <button type="button" id="prevBtn" aria-controls="flipbook">Previous Page</button>
+          <button type="button" id="nextBtn" aria-controls="flipbook">Next Page</button>
+        </div>
       </div>
     </div>
 
