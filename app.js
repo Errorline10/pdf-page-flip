@@ -416,6 +416,11 @@ class PdfFlipbook {
       this.isDragging = false;
       this.bookShell.classList.remove("is-dragging");
       this.updatePinchStart();
+      return;
+    }
+
+    if (this.activeTouchPointers.size === 1 && this.bookShell.classList.contains("is-zoomed")) {
+      this.handlePanStart(event);
     }
   }
 
@@ -426,6 +431,11 @@ class PdfFlipbook {
       clientX: event.clientX,
       clientY: event.clientY
     });
+
+    if (this.activeTouchPointers.size === 1 && this.isDragging) {
+      this.handlePanMove(event);
+      return;
+    }
 
     if (this.activeTouchPointers.size < 2 || this.pinchStartDistance <= 0) return;
 
@@ -448,7 +458,7 @@ class PdfFlipbook {
   }
 
   handlePanStart(event) {
-    if (event.pointerType === "touch") {
+    if (event.pointerType === "touch" && this.activeTouchPointers.size > 1) {
       return;
     }
 

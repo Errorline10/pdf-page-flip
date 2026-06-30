@@ -746,9 +746,8 @@ button:disabled,
 
 
 @container (max-width: 767px) {
-  .fullscreen-btn span,
-  .open-pdf-link span {
-    display: none;
+ .open-pdf-link::after {
+    content: "Download";
   }
 }
 
