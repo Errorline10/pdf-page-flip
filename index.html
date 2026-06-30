@@ -6,8 +6,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Flip-a-Thing turns PDFs into polished, responsive flipbook viewers for reports, brochures, catalogs, and campus publications." />
   <title>Flip-a-Thing PDF Viewer</title>
-  <link rel="stylesheet" href="./vendor/page-flip/css/page-flip.css" />
+  <link rel="stylesheet" href="./page-flip/css/page-flip.css" />
   <link rel="stylesheet" href="./styles.css" />
+
+  <script src="./page-flip/js/page-flip.browser.min.js"></script>
+
   <style>
     :root {
       --navy: #003865;
@@ -612,9 +615,23 @@
           <a class="button" href="./example-pdfs/index.html">View example PDFs</a>
           <a class="button" href="./index.html">Read implementation guide</a>
         </div>
+
+
+<div class="pdf-flipbook" data-pdf-url="FGCU_Classic.pdf"></div>
+<div class="pdf-flipbook" data-pdf-url="FFSS.pdf"></div>
+
+
       </div>
+
+
+
+
     </section>
   </main>
+
+
+
+
 
   <footer class="page-shell footer">
     <p>Flip-a-Thing PDF Viewer. Interactive PDF presentation for modern websites.</p>
@@ -639,7 +656,8 @@
     </div>
   </div>
 
-  <script src="./vendor/page-flip/js/page-flip.browser.min.js"></script>
+
+
   <script type="module">
     import { createPdfFlipbook } from "./app.js";
 
