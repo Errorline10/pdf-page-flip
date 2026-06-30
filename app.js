@@ -1,9 +1,9 @@
-import * as pdfjsLib from "../vendor/pdfjs-dist/pdf.min.mjs";
+import * as pdfjsLib from "./vendor/pdfjs-dist/pdf.min.mjs";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "../vendor/pdfjs-dist/pdf.worker.min.mjs";
 
 // Add more instances here, or set data-pdf-url on each .pdf-flipbook mount.
-const pdfUrl = "example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf";
+const pdfUrl = "./example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf";
 const flipbookConfigs = [
   {
     root: ".pdf-flipbook",
@@ -27,12 +27,12 @@ function getPdfFlipbookTemplate(options = {}) {
     <div class="book-frame">
       <div class="status-wrapper status-wrapper--top">
         <button type="button" class="fullscreen-btn icon-btn" aria-label="Toggle fullscreen view">
-          <img src="../images/icon-full-screen.svg" alt="" aria-hidden="true" />
+          <img src="images/icon-full-screen.svg" alt="" aria-hidden="true" />
           <span>Full screen</span>
         </button>
         <span class="topbar-separator" aria-hidden="true">|</span>
         <a class="pdf-link icon-btn open-pdf-link" href="${pdfLinkUrl}" target="_blank" rel="noopener noreferrer" aria-label="Open the accessible PDF view in a new tab">
-          <img src="../images/icon-open.svg" alt="" aria-hidden="true" />
+          <img src="images/icon-open.svg" alt="" aria-hidden="true" />
           <span>Open Accessible View</span>
         </a>
         <div class="zoom-group" role="group" aria-label="Zoom controls">
@@ -43,7 +43,7 @@ function getPdfFlipbookTemplate(options = {}) {
       </div>
       <section class="book-shell" role="region" aria-label="PDF flipbook viewer">
         <div class="book-loading" aria-hidden="true">
-          <img src="../images/loading-bar-book.gif" alt="" />
+          <img src="images/loading-bar-book.gif" alt="" />
         </div>
         <button type="button" class="book-nav-btn book-prev-btn left" aria-label="Previous page">&lt;</button>
         <button type="button" class="book-nav-btn book-next-btn right" aria-label="Next page">&gt;</button>

@@ -6,8 +6,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="description" content="Flip-a-Thing turns PDFs into polished, responsive flipbook viewers for reports, brochures, catalogs, and campus publications." />
   <title>Flip-a-Thing PDF Viewer</title>
-  <link rel="stylesheet" href="vendor/page-flip/css/page-flip.css" />
-  <link rel="stylesheet" href="flip-a-thing/styles.css" />
+  <link rel="stylesheet" href="./vendor/page-flip/css/page-flip.css" />
+  <link rel="stylesheet" href="./styles.css" />
   <style>
     :root {
       --navy: #003865;
@@ -503,7 +503,7 @@
       <nav class="nav-links" aria-label="Primary navigation">
         <a href="#features">Features</a>
         <a href="#workflow">Workflow</a>
-        <a href="flip-a-thing/index.html">Implementation guide</a>
+        <a href="./dev-index.html">Implementation guide</a>
         <a href="#viewer-modal" data-open-viewer>Launch viewer</a>
       </nav>
     </div>
@@ -517,7 +517,7 @@
         <p>Turn reports, brochures, catalogs, and campus publications into a polished browser-based flipbook with zoom, fullscreen mode, page controls, and an accessible PDF view.</p>
         <div class="actions">
           <button class="button primary" type="button" data-open-viewer>Open the viewer</button>
-          <a class="button secondary" href="flip-a-thing/index.html">Implementation guide</a>
+          <a class="button secondary" href="./dev-index.html">Implementation guide</a>
         </div>
       </div>
 
@@ -609,8 +609,8 @@
         <p>Open the viewer page and test it with the bundled sample PDFs.</p>
         <div class="actions">
           <button class="button" type="button" data-open-viewer>Open Flip-a-Thing</button>
-          <a class="button" href="flip-a-thing/example-pdfs/index.html">View example PDFs</a>
-          <a class="button" href="flip-a-thing/index.html">Read implementation guide</a>
+          <a class="button" href="./example-pdfs/index.html">View example PDFs</a>
+          <a class="button" href="./index.html">Read implementation guide</a>
         </div>
       </div>
     </section>
@@ -630,18 +630,18 @@
         <div id="modalViewerMount"></div>
         <div class="pdf-picker">
           <select id="pdfSelect" aria-label="Choose a PDF to preview">
-            <option value="flip-a-thing/example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf">Annual Report Concept</option>
-            <option value="flip-a-thing/example-pdfs/FFSS.pdf">FFSS</option>
-            <option value="flip-a-thing/example-pdfs/FGCU_Classic.pdf">FGCU Classic</option>
+            <option value="./example-pdfs/FGCU_Classic.pdf">FGCU Classic</option>
+            <option value="./example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf">Annual Report Concept</option>
+            <option value="./example-pdfs/FFSS.pdf">FFSS</option>
           </select>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="vendor/page-flip/js/page-flip.browser.min.js"></script>
+  <script src="./vendor/page-flip/js/page-flip.browser.min.js"></script>
   <script type="module">
-    import { createPdfFlipbook } from "./flip-a-thing/app.js";
+    import { createPdfFlipbook } from "./app.js";
 
     const modal = document.getElementById("viewer-modal");
     const mount = document.getElementById("modalViewerMount");
