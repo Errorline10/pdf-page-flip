@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FGCU - proof of concept - FlipBook</title>
+
+  <!-- StPageFlip / page-flip CSS -->
+  <link rel="stylesheet" href="vendor/page-flip/css/page-flip.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <main class="page-wrapper" id="main-content">
+    <h1 id="book-title">FGCU - proof of concept - FlipBook</h1>
+
+    <div class="pdf-flipbook" data-pdf-url="Annual_Report_Concept_Windows_v3_spreads 1.pdf"></div>
+    <div class="pdf-flipbook" data-pdf-url="FFSS.pdf"></div>
+
+
+    <div class="book-container">
+      <div class="pdf-flipbook" data-pdf-url="Annual_Report_Concept_Windows_v3_spreads 1.pdf"></div>
+      <div class="pdf-flipbook" data-pdf-url="FFSS.pdf"></div>
+    </div>
+
+  </main>
+
+  <!-- StPageFlip / page-flip -->
+  <script src="vendor/page-flip/js/page-flip.browser.min.js"></script>
+
+  <!-- PDF.js and flipbook setup -->
+  <script type="module" src="app.js"></script>
+</body>
+
+</html>

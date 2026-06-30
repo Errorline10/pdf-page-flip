@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Flip-a-Thing Implementation Guide</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172033;
+      --muted: #596274;
+      --line: #d9dee8;
+      --panel: #f7f9fc;
+      --accent: #ffcb05;
+      --accent-ink: #1d2433;
+      --code: #101827;
+      --code-ink: #eef3ff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.55;
+      background: #ffffff;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .guide-shell {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 40px 0 56px;
+    }
+
+    .guide-header {
+      display: grid;
+      gap: 20px;
+      padding: 28px 0 32px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .eyebrow {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 780px;
+      margin-bottom: 0;
+      font-size: clamp(2.2rem, 6vw, 4.6rem);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    h2 {
+      margin-bottom: 12px;
+      font-size: clamp(1.45rem, 3vw, 2rem);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 1rem;
+    }
+
+    .intro {
+      max-width: 760px;
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .button-link {
+      display: inline-flex;
+      min-height: 42px;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--ink);
+      padding: 0 16px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 700;
+    }
+
+    .button-link.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: var(--accent-ink);
+    }
+
+    .guide-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 280px;
+      gap: 36px;
+      align-items: start;
+      padding-top: 36px;
+    }
+
+    .guide-content {
+      display: grid;
+      gap: 28px;
+    }
+
+    .guide-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 24px;
+      background: #ffffff;
+    }
+
+    .note {
+      border-left: 4px solid var(--accent);
+      padding: 14px 16px;
+      background: var(--panel);
+      color: var(--muted);
+    }
+
+    .note p:last-child,
+    .guide-card p:last-child,
+    .guide-card ul:last-child {
+      margin-bottom: 0;
+    }
+
+    code {
+      font-family: Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.95em;
+    }
+
+    pre {
+      overflow-x: auto;
+      margin: 16px 0 0;
+      border-radius: 6px;
+      padding: 18px;
+      background: var(--code);
+      color: var(--code-ink);
+      line-height: 1.45;
+    }
+
+    pre code {
+      font-size: 0.9rem;
+    }
+
+    .toc {
+      position: sticky;
+      top: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      background: var(--panel);
+    }
+
+    .toc h2 {
+      margin-bottom: 10px;
+      font-size: 1rem;
+    }
+
+    .toc a {
+      display: block;
+      padding: 6px 0;
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    .toc a:hover,
+    .toc a:focus-visible {
+      color: var(--ink);
+      text-decoration: underline;
+    }
+
+    .file-list {
+      display: grid;
+      gap: 8px;
+      padding-left: 18px;
+    }
+
+    @media (max-width: 820px) {
+      .guide-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .toc {
+        position: static;
+        order: -1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="guide-shell">
+    <header class="guide-header">
+      <p class="eyebrow">Developer implementation guide</p>
+      <h1>Flip-a-Thing PDF Viewer</h1>
+      <p class="intro">
+        Use Flip-a-Thing to render one or more PDF flipbooks on the same page. Each instance gets its own controls,
+        listeners, loading state, zoom behavior, and PDF source.
+      </p>
+      <div class="actions">
+        <a class="button-link primary" href="example-pdfs/index.html">View examples</a>
+        <a class="button-link" href="../index.html">Marketing page</a>
+      </div>
+    </header>
+
+    <div class="guide-layout">
+      <article class="guide-content">
+        <section class="guide-card" id="files">
+          <h2>Required Files</h2>
+          <p>
+            Keep the viewer library files together so the relative asset paths resolve correctly.
+          </p>
+          <ul class="file-list">
+            <li><code>flip-a-thing/app.js</code></li>
+            <li><code>flip-a-thing/styles.css</code></li>
+            <li><code>vendor/pdfjs-dist/pdf.min.mjs</code></li>
+            <li><code>vendor/pdfjs-dist/pdf.worker.min.mjs</code></li>
+            <li><code>vendor/page-flip/js/page-flip.browser.min.js</code></li>
+            <li><code>vendor/page-flip/css/page-flip.css</code></li>
+            <li><code>images/loading-bar-book.gif</code>, <code>images/icon-open.svg</code>, and <code>images/icon-full-screen.svg</code></li>
+          </ul>
+        </section>
+
+        <section class="guide-card" id="dependencies">
+          <h2>1. Include Dependencies</h2>
+          <p>
+            Add the PageFlip stylesheet, the Flip-a-Thing stylesheet, PageFlip's browser build, and the Flip-a-Thing
+            module script.
+          </p>
+          <pre><code>&lt;link rel="stylesheet" href="vendor/page-flip/css/page-flip.css" /&gt;
+&lt;link rel="stylesheet" href="flip-a-thing/styles.css" /&gt;
+
+&lt;script src="vendor/page-flip/js/page-flip.browser.min.js"&gt;&lt;/script&gt;
+&lt;script type="module" src="flip-a-thing/app.js"&gt;&lt;/script&gt;</code></pre>
+        </section>
+
+        <section class="guide-card" id="auto-init">
+          <h2>2. Add a Viewer Mount</h2>
+          <p>
+            The auto initializer looks for <code>.pdf-flipbook</code> elements and reads the PDF URL from
+            <code>data-pdf-url</code>.
+          </p>
+          <pre><code>&lt;div class="pdf-flipbook" data-pdf-url="flip-a-thing/example-pdfs/FGCU_Classic.pdf"&gt;&lt;/div&gt;</code></pre>
+          <div class="note">
+            <p>
+              The PDF path is relative to the HTML page where the viewer is mounted, not relative to
+              <code>app.js</code>.
+            </p>
+          </div>
+        </section>
+
+        <section class="guide-card" id="multiple">
+          <h2>3. Mount Multiple Viewers</h2>
+          <p>
+            You can place multiple viewer mounts on the same page. Each one becomes an independent flipbook instance.
+          </p>
+          <pre><code>&lt;div class="pdf-flipbook" data-pdf-url="flip-a-thing/example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf"&gt;&lt;/div&gt;
+&lt;div class="pdf-flipbook" data-pdf-url="flip-a-thing/example-pdfs/FFSS.pdf"&gt;&lt;/div&gt;
+&lt;div class="pdf-flipbook" data-pdf-url="flip-a-thing/example-pdfs/FGCU_Classic.pdf"&gt;&lt;/div&gt;</code></pre>
+        </section>
+
+        <section class="guide-card" id="manual-api">
+          <h2>4. Create an Instance Manually</h2>
+          <p>
+            Use the exported factory when you need to control when a viewer is created, such as inside a modal or after
+            a PDF picker changes.
+          </p>
+          <pre><code>&lt;div id="viewerMount"&gt;&lt;/div&gt;
+
+&lt;script type="module"&gt;
+  import { createPdfFlipbook } from "./flip-a-thing/app.js";
+
+  const mount = document.querySelector("#viewerMount");
+  const viewer = createPdfFlipbook(mount, {
+    pdfUrl: "flip-a-thing/example-pdfs/FGCU_Classic.pdf",
+    pdfLinkUrl: "flip-a-thing/example-pdfs/FGCU_Classic.pdf"
+  });
+&lt;/script&gt;</code></pre>
+        </section>
+
+        <section class="guide-card" id="options">
+          <h2>Available Options</h2>
+          <p>
+            Pass these values into <code>createPdfFlipbook(mount, options)</code> or set the PDF URL with
+            <code>data-pdf-url</code> for auto initialization.
+          </p>
+          <ul class="file-list">
+            <li><code>pdfUrl</code>: The PDF file to render.</li>
+            <li><code>pdfLinkUrl</code>: The URL opened by the accessible view button. Defaults to <code>pdfUrl</code>.</li>
+            <li><code>title</code>: Optional label used by the generated viewer markup.</li>
+            <li><code>startZoom</code>: Optional initial zoom value. The viewer resets to 100% after loading.</li>
+          </ul>
+        </section>
+
+        <section class="guide-card" id="deployment">
+          <h2>Deployment Notes</h2>
+          <ul class="file-list">
+            <li>Run the page through a local or hosted web server. Browser PDF workers do not behave reliably from <code>file://</code>.</li>
+            <li>Keep the vendor files and images available at the paths used by <code>app.js</code>.</li>
+            <li>Do not reuse IDs in custom markup. The library namespaces generated IDs and listeners per instance.</li>
+            <li>Use <code>styles.css</code> to customize the viewer controls, toolbar layout, loading image, and responsive behavior.</li>
+          </ul>
+        </section>
+      </article>
+
+      <nav class="toc" aria-label="Implementation guide sections">
+        <h2>On this page</h2>
+        <a href="#files">Required files</a>
+        <a href="#dependencies">Include dependencies</a>
+        <a href="#auto-init">Add a viewer mount</a>
+        <a href="#multiple">Mount multiple viewers</a>
+        <a href="#manual-api">Manual instance API</a>
+        <a href="#options">Available options</a>
+        <a href="#deployment">Deployment notes</a>
+      </nav>
+    </div>
+  </main>
+</body>
+
+</html>
