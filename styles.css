@@ -5,7 +5,7 @@
   --muted: #67727f;
   --border: #d7dde3;
   --focus: #174a7c;
-  --gray-accent: #e8ecef;
+  --gray-accent: rgb(228, 228, 228);
   --fgcu-navy: #003865;
   --fgcu-gold: #fdb913;
   --fgcu-green: #4f7942;
@@ -74,6 +74,13 @@ body {
   line-height: 1.5;
 }
 
+
+
+
+.pdf-flipbook{
+  margin: 20px;
+}
+
 .book-frame {
   overflow: hidden;
 }
@@ -112,12 +119,12 @@ body {
   margin-left: auto;
 }
 
-.toolbar .zoom-btn {
+.zoom-btn {
   min-width: 3rem;
   padding-inline: 0.7rem;
 }
 
-.toolbar .zoom-btn--text {
+.zoom-btn--text {
   background: transparent;
   border-color: transparent;
   color: var(--fgcu-navy);
@@ -125,17 +132,44 @@ body {
   min-width: auto;
 }
 
-.toolbar .zoom-btn--text:hover {
+.zoom-btn--text:hover {
   background: transparent;
   color: #002b4d;
   text-decoration: underline;
 }
 
-.toolbar .zoom-btn--text:disabled {
+.zoom-btn--text:disabled {
   background: transparent;
   border-color: transparent;
-  color: var(--fgcu-disabled);
+  color: var(--muted);
+  cursor: default;
   text-decoration: none;
+}
+
+.reset-zoom-btn.is-zoomed {
+  background-image: linear-gradient(
+    90deg,
+    var(--fgcu-navy) 0%,
+    var(--fgcu-navy) 35%,
+    var(--fgcu-gold) 50%,
+    var(--fgcu-navy) 65%,
+    var(--fgcu-navy) 100%
+  );
+  background-size: 260% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: zoom-shimmer 5s ease-in-out infinite;
+}
+
+@keyframes zoom-shimmer {
+  0%,
+  78% {
+    background-position: 130% 0;
+  }
+
+  100% {
+    background-position: -130% 0;
+  }
 }
 
 .page-status {
@@ -164,13 +198,93 @@ body {
 .status-wrapper--bottom {
   border-bottom-left-radius: 0.5rem;
   border-bottom-right-radius: 0.5rem;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.4rem 1rem;
+}
+
+.book-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-left: auto;
 }
 
 .book-topbar {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: center;
   gap: 0.75rem;
   padding: 0 0 10px 0;
+}
+
+.status-wrapper--top {
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 1rem;
+  container-type: inline-size;
+}
+
+.status-wrapper--top .zoom-group {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.icon-btn {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fgcu-navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font: inherit;
+  line-height: 1;
+}
+
+.icon-btn img {
+  display: block;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  margin: 0;
+}
+
+.icon-btn:hover {
+  background: transparent;
+  color: #002b4d;
+  text-decoration: underline;
+}
+
+.pdf-link.icon-btn {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fgcu-navy);
+  text-align: left;
+}
+
+.pdf-link.icon-btn:hover {
+  background: transparent;
+  color: #002b4d;
+  text-decoration: underline;
 }
 
 .book-topbar button,
@@ -189,6 +303,14 @@ button,
   font-size: 1rem;
   line-height: 1.2;
   text-decoration: none;
+  transition:
+    background-color 800ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 800ms cubic-bezier(0.22, 1, 0.36, 1),
+    color 800ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 800ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 800ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 800ms cubic-bezier(0.22, 1, 0.36, 1),
+    text-decoration-color 800ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 button:hover,
@@ -209,6 +331,44 @@ button:disabled,
   color: #6b6b6b;
   cursor: not-allowed;
   opacity: 0.9;
+}
+
+.zoom-out-btn,
+.zoom-in-btn {
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 1px solid rgba(0, 56, 101, 0.25);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--fgcu-navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.zoom-out-btn:hover,
+.zoom-in-btn:hover {
+  border-color: var(--fgcu-navy);
+  background: rgba(255, 255, 255, 0.55);
+  color: #002b4d;
+}
+
+.zoom-out-btn:focus,
+.zoom-in-btn:focus {
+  outline: none;
+}
+
+.zoom-out-btn:disabled,
+.zoom-in-btn:disabled {
+  border-color: rgba(103, 114, 127, 0.22);
+  background: transparent;
+  color: var(--fgcu-disabled);
+  opacity: 1;
 }
 
 .status {
@@ -311,6 +471,10 @@ button:disabled,
 
 .book-nav-btn:hover {
   background: #6a737c;
+}
+
+.book-nav-btn:focus {
+  outline: none;
 }
 
 .book-nav-btn.left {
@@ -452,6 +616,22 @@ button:disabled,
     text-align: center;
   }
 
+  .zoom-out-btn,
+  .zoom-in-btn {
+    width: 2rem;
+    min-width: 2rem;
+  }
+
+  .pdf-link.icon-btn {
+    width: auto;
+    text-align: left;
+  }
+
+  .fullscreen-btn span,
+  .open-pdf-link span {
+    display: none;
+  }
+
   .status {
     width: 100%;
     margin-left: 0;
@@ -460,5 +640,12 @@ button:disabled,
   .book-shell {
     min-height: 420px;
     padding: 0.5rem 2.5rem;
+  }
+}
+
+@container (max-width: 767px) {
+  .fullscreen-btn span,
+  .open-pdf-link span {
+    display: none;
   }
 }

@@ -25,16 +25,21 @@ function getPdfFlipbookTemplate(options = {}) {
 
   return `
     <div class="book-frame">
-      <div class="book-topbar" role="group" aria-label="Book top controls">
-        <button type="button" class="fullscreen-btn" aria-label="Toggle fullscreen view">Fullscreen</button>
-
-        <a class="pdf-link" href="${pdfLinkUrl}" target="_blank" rel="noopener noreferrer" aria-label="Open the PDF in a new tab">
-          Open Accessible PDF
+      <div class="status-wrapper status-wrapper--top">
+        <button type="button" class="fullscreen-btn icon-btn" aria-label="Toggle fullscreen view">
+          <img src="images/icon-full-screen.svg" alt="" aria-hidden="true" />
+          <span>Full screen</span>
+        </button>
+        <span class="topbar-separator" aria-hidden="true">|</span>
+        <a class="pdf-link icon-btn open-pdf-link" href="${pdfLinkUrl}" target="_blank" rel="noopener noreferrer" aria-label="Open the accessible PDF view in a new tab">
+          <img src="images/icon-open.svg" alt="" aria-hidden="true" />
+          <span>Open Accessible View</span>
         </a>
-      </div>
-
-      <div class="status-wrapper status-wrapper--top" aria-hidden="true">
-        &nbsp;
+        <div class="zoom-group" role="group" aria-label="Zoom controls">
+          <button type="button" class="zoom-btn zoom-btn--text reset-zoom-btn" aria-label="Reset zoom">Zoom</button>
+          <button type="button" class="zoom-btn zoom-out-btn" aria-label="Zoom out">&minus;</button>
+          <button type="button" class="zoom-btn zoom-in-btn" aria-label="Zoom in">+</button>
+        </div>
       </div>
       <section class="book-shell" role="region" aria-label="PDF flipbook viewer">
         <div class="book-loading" aria-hidden="true">
@@ -53,18 +58,6 @@ function getPdfFlipbookTemplate(options = {}) {
       </section>
       <div class="status-wrapper status-wrapper--bottom" role="status" aria-live="polite" aria-atomic="true">
         <span class="status">Loading PDF...</span>
-      </div>
-
-      <div class="toolbar" role="group" aria-label="Flipbook controls">
-        <div class="zoom-group">
-          <button type="button" class="zoom-btn zoom-out-btn" aria-label="Zoom out">&minus;</button>
-          <button type="button" class="zoom-btn zoom-in-btn" aria-label="Zoom in">+</button>
-          <button type="button" class="zoom-btn zoom-btn--text reset-zoom-btn" aria-label="Reset zoom">Reset zoom</button>
-        </div>
-        <div class="page-group">
-          <button type="button" class="prev-btn">Previous Page</button>
-          <button type="button" class="next-btn">Next Page</button>
-        </div>
       </div>
     </div>
   `;
@@ -294,20 +287,28 @@ class PdfFlipbook {
     const isLastOrSecondToLastPage = currentPage >= totalPages - 1;
 
     [this.prevBtn, this.bookPrevBtn].forEach((button) => {
+      if (!button) return;
+
       button.disabled = isFirstPage;
       button.classList.toggle("is-disabled", isFirstPage);
     });
 
     [this.nextBtn, this.bookNextBtn].forEach((button) => {
+      if (!button) return;
+
       button.disabled = isLastOrSecondToLastPage;
       button.classList.toggle("is-disabled", isLastOrSecondToLastPage);
     });
   }
 
   updateZoomButtons() {
+    const isDefaultZoom = this.zoomLevel === 1;
+
     this.zoomOutBtn.disabled = this.zoomLevel <= this.minZoom;
     this.zoomInBtn.disabled = this.zoomLevel >= this.maxZoom;
-    this.resetZoomBtn.disabled = this.zoomLevel === 1;
+    this.resetZoomBtn.disabled = isDefaultZoom;
+    this.resetZoomBtn.textContent = isDefaultZoom ? "Zoom" : "Reset zoom";
+    this.resetZoomBtn.classList.toggle("is-zoomed", !isDefaultZoom);
   }
 
   applyTransform() {
