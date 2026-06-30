@@ -2,370 +2,522 @@ import * as pdfjsLib from "./vendor/pdfjs-dist/pdf.min.mjs";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdfjs-dist/pdf.worker.min.mjs";
 
-// Default PDF. Keep this HTML file and FFSS.pdf in the same folder.
+// Add more instances here, or set data-pdf-url on each .pdf-flipbook mount.
 const pdfUrl = "Annual_Report_Concept_Windows_v3_spreads 1.pdf";
-//const pdfUrl = "FFSS.pdf"; 
+const flipbookConfigs = [
+  {
+    root: ".pdf-flipbook",
+    pdfUrl
+  }
+];
 
-const flipbookEl = document.getElementById("flipbook");
-const statusEl = document.getElementById("status");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const bookPrevBtn = document.getElementById("bookPrevBtn");
-const bookNextBtn = document.getElementById("bookNextBtn");
-const zoomOutBtn = document.getElementById("zoomOutBtn");
-const resetZoomBtn = document.getElementById("resetZoomBtn");
-const zoomInBtn = document.getElementById("zoomInBtn");
-const fullscreenBtn = document.getElementById("fullscreenBtn");
-const bookShell = document.querySelector(".book-shell");
-const coverZones = document.querySelectorAll(".cover-zone");
-const bookLoadingEl = document.getElementById("bookLoading");
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
 
-let pageFlip = null;
-let zoomLevel = 1;
-let panX = 0;
-let panY = 0;
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let dragOriginX = 0;
-let dragOriginY = 0;
-const activeTouchPointers = new Map();
-let pinchStartDistance = 0;
-let pinchStartZoom = 1;
-const minZoom = 1;
-const maxZoom = 5;
-const zoomStep = 0.1;
-const defaultPageAspectRatio = 420 / 594;
-let maxPageAspectRatio = defaultPageAspectRatio;
+function getPdfFlipbookTemplate(options = {}) {
+  const pdfLinkUrl = escapeHtml(options.pdfLinkUrl || options.pdfUrl || "#");
 
-async function renderPdfToFlipbook(url) {
-  try {
-    bookLoadingEl.classList.remove("is-hidden");
-    const loadingTask = pdfjsLib.getDocument(url);
-    const pdf = await loadingTask.promise;
+  return `
+    <div class="book-frame">
+      <div class="book-topbar" role="group" aria-label="Book top controls">
+        <button type="button" class="fullscreen-btn" aria-label="Toggle fullscreen view">Fullscreen</button>
 
-    statusEl.textContent = `Rendering ${pdf.numPages} pages…`;
+        <a class="pdf-link" href="${pdfLinkUrl}" target="_blank" rel="noopener noreferrer" aria-label="Open the PDF in a new tab">
+          Open Accessible PDF
+        </a>
+      </div>
 
-    const pages = [];
-    maxPageAspectRatio = defaultPageAspectRatio;
+      <div class="status-wrapper status-wrapper--top" aria-hidden="true">
+        &nbsp;
+      </div>
+      <section class="book-shell" role="region" aria-label="PDF flipbook viewer">
+        <div class="book-loading" aria-hidden="true">
+          <img src="images/loading-bar-book.gif" alt="" />
+        </div>
+        <button type="button" class="book-nav-btn book-prev-btn left" aria-label="Previous page">&lt;</button>
+        <button type="button" class="book-nav-btn book-next-btn right" aria-label="Next page">&gt;</button>
+        <div class="cover-overlay" aria-hidden="true">
+          <div class="cover-zone left"></div>
+          <div class="cover-zone right"></div>
+        </div>
+        <p class="sr-only flipbook-help">Use the previous and next buttons or the left and right arrow keys to move through the book.</p>
+        <div class="flipbook-viewport">
+          <div class="flipbook" role="group" aria-label="Flipbook pages" tabindex="0"></div>
+        </div>
+      </section>
+      <div class="status-wrapper status-wrapper--bottom" role="status" aria-live="polite" aria-atomic="true">
+        <span class="status">Loading PDF...</span>
+      </div>
 
-    for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-      const page = await pdf.getPage(pageNumber);
+      <div class="toolbar" role="group" aria-label="Flipbook controls">
+        <div class="zoom-group">
+          <button type="button" class="zoom-btn zoom-out-btn" aria-label="Zoom out">&minus;</button>
+          <button type="button" class="zoom-btn zoom-in-btn" aria-label="Zoom in">+</button>
+          <button type="button" class="zoom-btn zoom-btn--text reset-zoom-btn" aria-label="Reset zoom">Reset zoom</button>
+        </div>
+        <div class="page-group">
+          <button type="button" class="prev-btn">Previous Page</button>
+          <button type="button" class="next-btn">Next Page</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
 
-      // Scale controls render sharpness. Higher values are sharper but heavier.
-      const viewport = page.getViewport({ scale: 2 });
-      //const viewport = page.getViewport({ scale: 1.6 });
-      //const viewport = page.getViewport({ scale: 1 });
+class PdfFlipbook {
+  static instanceCount = 0;
 
-      const currentPageAspectRatio = viewport.width / viewport.height;
-      if (currentPageAspectRatio > maxPageAspectRatio) {
-        maxPageAspectRatio = currentPageAspectRatio;
-      }
+  constructor(root, options = {}) {
+    this.root = root;
+    this.pdfUrl = options.pdfUrl || root.dataset.pdfUrl;
+    this.pdfLinkUrl = options.pdfLinkUrl || root.dataset.pdfLinkUrl || this.pdfUrl;
+    this.instanceId = `pdf-flipbook-${++PdfFlipbook.instanceCount}`;
 
-      const canvas = document.createElement("canvas");
-      const context = canvas.getContext("2d", { alpha: false });
+    this.renderTemplate();
 
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      canvas.setAttribute("aria-label", `PDF page ${pageNumber}`);
+    this.viewportEl = root.querySelector(".flipbook-viewport");
+    this.flipbookEl = root.querySelector(".flipbook");
+    this.statusEl = root.querySelector(".status");
+    this.prevBtn = root.querySelector(".prev-btn");
+    this.nextBtn = root.querySelector(".next-btn");
+    this.bookPrevBtn = root.querySelector(".book-prev-btn");
+    this.bookNextBtn = root.querySelector(".book-next-btn");
+    this.zoomOutBtn = root.querySelector(".zoom-out-btn");
+    this.resetZoomBtn = root.querySelector(".reset-zoom-btn");
+    this.zoomInBtn = root.querySelector(".zoom-in-btn");
+    this.fullscreenBtn = root.querySelector(".fullscreen-btn");
+    this.bookShell = root.querySelector(".book-shell");
+    this.coverZones = root.querySelectorAll(".cover-zone");
+    this.bookLoadingEl = root.querySelector(".book-loading");
+    this.helpEl = root.querySelector(".flipbook-help");
 
-      await page.render({
-        canvasContext: context,
-        viewport: viewport
-      }).promise;
+    this.pageFlip = null;
+    this.zoomLevel = 1;
+    this.panX = 0;
+    this.panY = 0;
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.dragStartY = 0;
+    this.dragOriginX = 0;
+    this.dragOriginY = 0;
+    this.isWheelZoomEnabled = false;
+    this.activeTouchPointers = new Map();
+    this.pinchStartDistance = 0;
+    this.pinchStartZoom = 1;
+    this.minZoom = 1;
+    this.maxZoom = 5;
+    this.zoomStep = 0.1;
+    this.defaultPageAspectRatio = 420 / 594;
+    this.maxPageAspectRatio = this.defaultPageAspectRatio;
 
-      const pageDiv = document.createElement("div");
-      pageDiv.className = "page";
-      pageDiv.setAttribute("data-density", "soft");
-      pageDiv.appendChild(canvas);
+    this.bindInstanceAttributes();
+    this.bindEvents();
+    this.setZoom(1);
+    this.updateNavigationButtons();
+  }
 
-      pages.push(pageDiv);
+  renderTemplate() {
+    this.root.innerHTML = getPdfFlipbookTemplate({
+      pdfUrl: this.pdfUrl,
+      pdfLinkUrl: this.pdfLinkUrl
+    });
+  }
+
+  bindInstanceAttributes() {
+    const helpId = `${this.instanceId}-help`;
+
+    if (this.helpEl) {
+      this.helpEl.id = helpId;
     }
 
-    initializeFlipbook(pages, maxPageAspectRatio);
-    bookLoadingEl.classList.add("is-hidden");
-    updateStatus();
-  } catch (error) {
-    console.error(error);
-    bookLoadingEl.classList.add("is-hidden");
-    statusEl.textContent = "Could not load the PDF.";
-    flipbookEl.innerHTML = `
+    if (this.bookShell) {
+      this.bookShell.setAttribute("aria-describedby", helpId);
+    }
+
+    if (this.flipbookEl) {
+      this.flipbookEl.id = `${this.instanceId}-pages`;
+    }
+
+    [this.prevBtn, this.nextBtn, this.fullscreenBtn].forEach((control) => {
+      if (control && this.flipbookEl) {
+        control.setAttribute("aria-controls", this.flipbookEl.id);
+      }
+    });
+  }
+
+  bindEvents() {
+    this.prevBtn?.addEventListener("click", () => this.flipPage("prev"));
+    this.bookPrevBtn?.addEventListener("click", () => this.flipPage("prev"));
+    this.nextBtn?.addEventListener("click", () => this.flipPage("next"));
+    this.bookNextBtn?.addEventListener("click", () => this.flipPage("next"));
+    this.zoomOutBtn?.addEventListener("click", () => this.setZoom(1));
+    this.resetZoomBtn?.addEventListener("click", () => this.setZoom(1));
+    this.zoomInBtn?.addEventListener("click", () => this.setZoom(this.zoomLevel + this.zoomStep));
+    this.fullscreenBtn?.addEventListener("click", () => this.toggleFullscreen());
+
+    this.bookShell?.addEventListener("wheel", (event) => this.handleWheelZoom(event), { passive: false });
+    this.bookShell?.addEventListener("click", () => this.enableWheelZoom());
+    this.bookShell?.addEventListener("focusin", () => this.enableWheelZoom());
+    this.bookShell?.addEventListener("pointerdown", (event) => this.handleTouchPointerDown(event));
+    this.bookShell?.addEventListener("pointerdown", (event) => this.handlePanStart(event));
+    this.root.addEventListener("keydown", (event) => this.handleKeydown(event));
+
+    document.addEventListener("pointermove", (event) => this.handleTouchPointerMove(event));
+    document.addEventListener("pointerup", (event) => this.handleTouchPointerEnd(event));
+    document.addEventListener("pointercancel", (event) => this.handleTouchPointerEnd(event));
+    document.addEventListener("pointermove", (event) => this.handlePanMove(event));
+    document.addEventListener("pointerup", () => this.handlePanEnd());
+    document.addEventListener("pointercancel", () => this.handlePanEnd());
+
+    this.coverZones.forEach((zone) => {
+      const handleZoneInteraction = () => {
+        this.flipPage(zone.classList.contains("right") ? "next" : "prev");
+      };
+
+      zone.addEventListener("click", handleZoneInteraction);
+      zone.addEventListener("dblclick", handleZoneInteraction);
+      zone.addEventListener("touchend", handleZoneInteraction);
+    });
+  }
+
+  async render() {
+    if (!this.pdfUrl) {
+      this.showError("No PDF URL was provided.");
+      return;
+    }
+
+    try {
+      this.bookLoadingEl?.classList.remove("is-hidden");
+      const loadingTask = pdfjsLib.getDocument(this.pdfUrl);
+      const pdf = await loadingTask.promise;
+
+      this.statusEl.textContent = `Rendering ${pdf.numPages} pages...`;
+
+      const pages = [];
+      this.maxPageAspectRatio = this.defaultPageAspectRatio;
+
+      for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        const page = await pdf.getPage(pageNumber);
+
+        // Scale controls render sharpness. Higher values are sharper but heavier.
+        const viewport = page.getViewport({ scale: 2 });
+        const currentPageAspectRatio = viewport.width / viewport.height;
+
+        if (currentPageAspectRatio > this.maxPageAspectRatio) {
+          this.maxPageAspectRatio = currentPageAspectRatio;
+        }
+
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d", { alpha: false });
+
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        canvas.setAttribute("aria-label", `PDF page ${pageNumber}`);
+
+        await page.render({
+          canvasContext: context,
+          viewport
+        }).promise;
+
+        const pageDiv = document.createElement("div");
+        pageDiv.className = "page";
+        pageDiv.setAttribute("data-density", "soft");
+        pageDiv.appendChild(canvas);
+
+        pages.push(pageDiv);
+      }
+
+      this.initializeFlipbook(pages, this.maxPageAspectRatio);
+      this.setZoom(1);
+      this.bookLoadingEl?.classList.add("is-hidden");
+      this.updateStatus();
+    } catch (error) {
+      console.error(error);
+      this.bookLoadingEl?.classList.add("is-hidden");
+      this.showError("Could not load the PDF.");
+    }
+  }
+
+  showError(message) {
+    this.statusEl.textContent = message;
+    this.flipbookEl.innerHTML = `
       <div class="error" role="alert">
         <strong>PDF could not be loaded.</strong><br>
-        Make sure this HTML file and <code>FFSS.pdf</code> are in the same folder,
-        and run the page from a web server rather than opening the HTML file directly.
+        Make sure the PDF exists and run the page from a web server rather than opening the HTML file directly.
       </div>
     `;
   }
-}
 
-function getPageHeightForWidth(width, pageAspectRatio) {
-  return Math.round(width / pageAspectRatio);
-}
-
-function initializeFlipbook(pages, pageAspectRatio) {
-  flipbookEl.innerHTML = "";
-
-  pages.forEach((page) => {
-    flipbookEl.appendChild(page);
-  });
-
-  pageFlip = new St.PageFlip(flipbookEl, {
-    width: 420,
-    height: getPageHeightForWidth(420, pageAspectRatio),
-    size: "stretch",
-    minWidth: 280,
-    maxWidth: 540,
-    minHeight: getPageHeightForWidth(280, pageAspectRatio),
-    maxHeight: getPageHeightForWidth(540, pageAspectRatio),
-    maxShadowOpacity: 0.35,
-    showCover: false,
-    mobileScrollSupport: false,
-    usePortrait: true,
-    flippingTime: 700,
-    drawShadow: true
-  });
-
-  pageFlip.loadFromHTML(document.querySelectorAll(".page"));
-
-  pageFlip.on("flip", () => {
-    updateStatus();
-  });
-}
-
-function updateNavigationButtons() {
-  if (!pageFlip) return;
-
-  const currentPage = pageFlip.getCurrentPageIndex() + 1;
-  const totalPages = pageFlip.getPageCount();
-  const isFirstPage = currentPage <= 1;
-  const isLastOrSecondToLastPage = currentPage >= totalPages - 1;
-
-  [prevBtn, bookPrevBtn].forEach((button) => {
-    button.disabled = isFirstPage;
-    button.classList.toggle("is-disabled", isFirstPage);
-  });
-
-  [nextBtn, bookNextBtn].forEach((button) => {
-    button.disabled = isLastOrSecondToLastPage;
-    button.classList.toggle("is-disabled", isLastOrSecondToLastPage);
-  });
-}
-
-function updateZoomButtons() {
-  zoomOutBtn.disabled = zoomLevel <= minZoom;
-  zoomInBtn.disabled = zoomLevel >= maxZoom;
-  resetZoomBtn.disabled = zoomLevel === 1;
-}
-
-function applyTransform() {
-  flipbookEl.style.setProperty("--flipbook-pan-x", `${panX}px`);
-  flipbookEl.style.setProperty("--flipbook-pan-y", `${panY}px`);
-  flipbookEl.style.setProperty("--flipbook-zoom", zoomLevel.toFixed(2));
-}
-
-function setZoom(nextZoom) {
-  zoomLevel = Math.min(maxZoom, Math.max(minZoom, nextZoom));
-  if (Math.abs(zoomLevel - 1) <= 0.0001) {
-    panX = 0;
-    panY = 0;
-  }
-  applyTransform();
-  bookShell.classList.toggle("is-zoomed", Math.abs(zoomLevel - 1) > 0.0001);
-  updateZoomButtons();
-  updateStatus();
-}
-
-function getPointerDistance(pointerA, pointerB) {
-  return Math.hypot(pointerA.clientX - pointerB.clientX, pointerA.clientY - pointerB.clientY);
-}
-
-function updatePinchStart() {
-  if (activeTouchPointers.size < 2) return;
-
-  const pointers = Array.from(activeTouchPointers.values());
-  pinchStartDistance = getPointerDistance(pointers[0], pointers[1]);
-  pinchStartZoom = zoomLevel;
-}
-
-function handleWheelZoom(event) {
-  event.preventDefault();
-
-  const zoomDirection = event.deltaY < 0 ? 1 : -1;
-  setZoom(zoomLevel + zoomDirection * zoomStep);
-}
-
-function handleTouchPointerDown(event) {
-  if (event.pointerType !== "touch") return;
-
-  activeTouchPointers.set(event.pointerId, {
-    clientX: event.clientX,
-    clientY: event.clientY
-  });
-
-  if (activeTouchPointers.size === 2) {
-    isDragging = false;
-    bookShell.classList.remove("is-dragging");
-    updatePinchStart();
-  }
-}
-
-function handleTouchPointerMove(event) {
-  if (!activeTouchPointers.has(event.pointerId)) return;
-
-  activeTouchPointers.set(event.pointerId, {
-    clientX: event.clientX,
-    clientY: event.clientY
-  });
-
-  if (activeTouchPointers.size < 2 || pinchStartDistance <= 0) return;
-
-  const pointers = Array.from(activeTouchPointers.values());
-  const currentDistance = getPointerDistance(pointers[0], pointers[1]);
-  setZoom(pinchStartZoom * (currentDistance / pinchStartDistance));
-  event.preventDefault();
-}
-
-function handleTouchPointerEnd(event) {
-  if (!activeTouchPointers.delete(event.pointerId)) return;
-
-  if (activeTouchPointers.size >= 2) {
-    updatePinchStart();
-    return;
+  getPageHeightForWidth(width, pageAspectRatio) {
+    return Math.round(width / pageAspectRatio);
   }
 
-  pinchStartDistance = 0;
-  pinchStartZoom = zoomLevel;
-}
+  initializeFlipbook(pages, pageAspectRatio) {
+    this.flipbookEl.innerHTML = "";
 
-function handlePanStart(event) {
-  if (event.pointerType === "touch") {
-    return;
+    pages.forEach((page) => {
+      this.flipbookEl.appendChild(page);
+    });
+
+    this.pageFlip = new St.PageFlip(this.flipbookEl, {
+      width: 420,
+      height: this.getPageHeightForWidth(420, pageAspectRatio),
+      size: "stretch",
+      minWidth: 280,
+      maxWidth: 540,
+      minHeight: this.getPageHeightForWidth(280, pageAspectRatio),
+      maxHeight: this.getPageHeightForWidth(540, pageAspectRatio),
+      maxShadowOpacity: 0.35,
+      showCover: false,
+      mobileScrollSupport: false,
+      usePortrait: true,
+      flippingTime: 700,
+      drawShadow: true
+    });
+
+    this.pageFlip.loadFromHTML(this.flipbookEl.querySelectorAll(".page"));
+    this.pageFlip.on("flip", () => this.updateStatus());
   }
 
-  if (!bookShell.classList.contains("is-zoomed") || event.button !== undefined && event.button !== 0) {
-    return;
+  updateNavigationButtons() {
+    if (!this.pageFlip) return;
+
+    const currentPage = this.pageFlip.getCurrentPageIndex() + 1;
+    const totalPages = this.pageFlip.getPageCount();
+    const isFirstPage = currentPage <= 1;
+    const isLastOrSecondToLastPage = currentPage >= totalPages - 1;
+
+    [this.prevBtn, this.bookPrevBtn].forEach((button) => {
+      button.disabled = isFirstPage;
+      button.classList.toggle("is-disabled", isFirstPage);
+    });
+
+    [this.nextBtn, this.bookNextBtn].forEach((button) => {
+      button.disabled = isLastOrSecondToLastPage;
+      button.classList.toggle("is-disabled", isLastOrSecondToLastPage);
+    });
   }
 
-  isDragging = true;
-  bookShell.classList.add("is-dragging");
-  dragStartX = event.clientX;
-  dragStartY = event.clientY;
-  dragOriginX = panX;
-  dragOriginY = panY;
-  event.preventDefault();
-}
-
-function handlePanMove(event) {
-  if (!isDragging) return;
-
-  panX = dragOriginX + (event.clientX - dragStartX);
-  panY = dragOriginY + (event.clientY - dragStartY);
-  applyTransform();
-  event.preventDefault();
-}
-
-function handlePanEnd() {
-  if (!isDragging) return;
-
-  isDragging = false;
-  bookShell.classList.remove("is-dragging");
-}
-
-function updateStatus() {
-  if (!pageFlip) {
-    statusEl.textContent = `Zoom ${Math.round(zoomLevel * 100)}%`;
-    return;
+  updateZoomButtons() {
+    this.zoomOutBtn.disabled = this.zoomLevel <= this.minZoom;
+    this.zoomInBtn.disabled = this.zoomLevel >= this.maxZoom;
+    this.resetZoomBtn.disabled = this.zoomLevel === 1;
   }
 
-  const currentPage = pageFlip.getCurrentPageIndex() + 1;
-  const totalPages = pageFlip.getPageCount();
-  statusEl.textContent = `Page ${currentPage} of ${totalPages} • Zoom ${Math.round(zoomLevel * 100)}%`;
-  updateNavigationButtons();
-}
-
-function flipPage(direction) {
-  if (!pageFlip) return;
-
-  if (direction === "next") {
-    pageFlip.flipNext();
-  } else if (direction === "prev") {
-    pageFlip.flipPrev();
+  applyTransform() {
+    const transformEl = this.viewportEl || this.flipbookEl;
+    transformEl.style.setProperty("--flipbook-pan-x", `${this.panX}px`);
+    transformEl.style.setProperty("--flipbook-pan-y", `${this.panY}px`);
+    transformEl.style.setProperty("--flipbook-zoom", this.zoomLevel.toFixed(2));
   }
-}
 
-prevBtn.addEventListener("click", () => flipPage("prev"));
-bookPrevBtn.addEventListener("click", () => flipPage("prev"));
+  setZoom(nextZoom) {
+    this.zoomLevel = Math.min(this.maxZoom, Math.max(this.minZoom, nextZoom));
 
-nextBtn.addEventListener("click", () => flipPage("next"));
-bookNextBtn.addEventListener("click", () => flipPage("next"));
-zoomOutBtn.addEventListener("click", () => setZoom(1));
-resetZoomBtn.addEventListener("click", () => setZoom(1));
-zoomInBtn.addEventListener("click", () => setZoom(zoomLevel + zoomStep));
-bookShell.addEventListener("wheel", handleWheelZoom, { passive: false });
-bookShell.addEventListener("pointerdown", handleTouchPointerDown);
-document.addEventListener("pointermove", handleTouchPointerMove);
-document.addEventListener("pointerup", handleTouchPointerEnd);
-document.addEventListener("pointercancel", handleTouchPointerEnd);
-bookShell.addEventListener("pointerdown", handlePanStart);
-document.addEventListener("pointermove", handlePanMove);
-document.addEventListener("pointerup", handlePanEnd);
-document.addEventListener("pointercancel", handlePanEnd);
-
-setZoom(1);
-updateNavigationButtons();
-
-coverZones.forEach((zone) => {
-  const handleZoneInteraction = (event) => {
-    if (zone.classList.contains("right")) {
-      flipPage("next");
-    } else {
-      flipPage("prev");
+    if (Math.abs(this.zoomLevel - 1) <= 0.0001) {
+      this.panX = 0;
+      this.panY = 0;
     }
-  };
 
-  zone.addEventListener("click", handleZoneInteraction);
-  zone.addEventListener("dblclick", handleZoneInteraction);
-  zone.addEventListener("touchend", handleZoneInteraction);
-});
+    this.applyTransform();
+    this.bookShell.classList.toggle("is-zoomed", Math.abs(this.zoomLevel - 1) > 0.0001);
+    this.updateZoomButtons();
+    this.updateStatus();
+  }
 
-fullscreenBtn.addEventListener("click", async () => {
-  try {
-    if (!document.fullscreenElement) {
-      await bookShell.requestFullscreen();
-    } else {
-      await document.exitFullscreen();
+  getPointerDistance(pointerA, pointerB) {
+    return Math.hypot(pointerA.clientX - pointerB.clientX, pointerA.clientY - pointerB.clientY);
+  }
+
+  updatePinchStart() {
+    if (this.activeTouchPointers.size < 2) return;
+
+    const pointers = Array.from(this.activeTouchPointers.values());
+    this.pinchStartDistance = this.getPointerDistance(pointers[0], pointers[1]);
+    this.pinchStartZoom = this.zoomLevel;
+  }
+
+  enableWheelZoom() {
+    this.isWheelZoomEnabled = true;
+  }
+
+  handleWheelZoom(event) {
+    if (!this.isWheelZoomEnabled) {
+      return;
     }
-  } catch (error) {
-    console.error("Fullscreen failed:", error);
+
+    event.preventDefault();
+
+    const zoomDirection = event.deltaY < 0 ? 1 : -1;
+    this.setZoom(this.zoomLevel + zoomDirection * this.zoomStep);
   }
+
+  handleTouchPointerDown(event) {
+    if (event.pointerType !== "touch") return;
+
+    this.activeTouchPointers.set(event.pointerId, {
+      clientX: event.clientX,
+      clientY: event.clientY
+    });
+
+    if (this.activeTouchPointers.size === 2) {
+      this.isDragging = false;
+      this.bookShell.classList.remove("is-dragging");
+      this.updatePinchStart();
+    }
+  }
+
+  handleTouchPointerMove(event) {
+    if (!this.activeTouchPointers.has(event.pointerId)) return;
+
+    this.activeTouchPointers.set(event.pointerId, {
+      clientX: event.clientX,
+      clientY: event.clientY
+    });
+
+    if (this.activeTouchPointers.size < 2 || this.pinchStartDistance <= 0) return;
+
+    const pointers = Array.from(this.activeTouchPointers.values());
+    const currentDistance = this.getPointerDistance(pointers[0], pointers[1]);
+    this.setZoom(this.pinchStartZoom * (currentDistance / this.pinchStartDistance));
+    event.preventDefault();
+  }
+
+  handleTouchPointerEnd(event) {
+    if (!this.activeTouchPointers.delete(event.pointerId)) return;
+
+    if (this.activeTouchPointers.size >= 2) {
+      this.updatePinchStart();
+      return;
+    }
+
+    this.pinchStartDistance = 0;
+    this.pinchStartZoom = this.zoomLevel;
+  }
+
+  handlePanStart(event) {
+    if (event.pointerType === "touch") {
+      return;
+    }
+
+    if (!this.bookShell.classList.contains("is-zoomed") || event.button !== undefined && event.button !== 0) {
+      return;
+    }
+
+    this.isDragging = true;
+    this.bookShell.classList.add("is-dragging");
+    this.dragStartX = event.clientX;
+    this.dragStartY = event.clientY;
+    this.dragOriginX = this.panX;
+    this.dragOriginY = this.panY;
+    event.preventDefault();
+  }
+
+  handlePanMove(event) {
+    if (!this.isDragging) return;
+
+    this.panX = this.dragOriginX + (event.clientX - this.dragStartX);
+    this.panY = this.dragOriginY + (event.clientY - this.dragStartY);
+    this.applyTransform();
+    event.preventDefault();
+  }
+
+  handlePanEnd() {
+    if (!this.isDragging) return;
+
+    this.isDragging = false;
+    this.bookShell.classList.remove("is-dragging");
+  }
+
+  updateStatus() {
+    if (!this.pageFlip) {
+      this.statusEl.textContent = `Zoom ${Math.round(this.zoomLevel * 100)}%`;
+      return;
+    }
+
+    const currentPage = this.pageFlip.getCurrentPageIndex() + 1;
+    const totalPages = this.pageFlip.getPageCount();
+    this.statusEl.textContent = `Page ${currentPage} of ${totalPages} - Zoom ${Math.round(this.zoomLevel * 100)}%`;
+    this.updateNavigationButtons();
+  }
+
+  flipPage(direction) {
+    if (!this.pageFlip) return;
+
+    if (direction === "next") {
+      this.pageFlip.flipNext();
+    } else if (direction === "prev") {
+      this.pageFlip.flipPrev();
+    }
+  }
+
+  async toggleFullscreen() {
+    try {
+      if (!document.fullscreenElement) {
+        await this.bookShell.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (error) {
+      console.error("Fullscreen failed:", error);
+    }
+  }
+
+  handleKeydown(event) {
+    if (!this.pageFlip) return;
+
+    if (event.key === "ArrowLeft") {
+      this.pageFlip.flipPrev();
+    }
+
+    if (event.key === "ArrowRight") {
+      this.pageFlip.flipNext();
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key === "+") {
+      event.preventDefault();
+      this.setZoom(this.zoomLevel + this.zoomStep);
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key === "-") {
+      event.preventDefault();
+      this.setZoom(1);
+    }
+
+    if ((event.ctrlKey || event.metaKey) && event.key === "0") {
+      event.preventDefault();
+      this.setZoom(1);
+    }
+  }
+}
+
+function createPdfFlipbook(root, options) {
+  const rootElement = typeof root === "string" ? document.querySelector(root) : root;
+  if (!rootElement) {
+    throw new Error("PdfFlipbook root element was not found.");
+  }
+
+  const instance = new PdfFlipbook(rootElement, options);
+  instance.render();
+  return instance;
+}
+
+window.PdfFlipbook = PdfFlipbook;
+window.createPdfFlipbook = createPdfFlipbook;
+window.getPdfFlipbookTemplate = getPdfFlipbookTemplate;
+
+export { PdfFlipbook, createPdfFlipbook, getPdfFlipbookTemplate };
+
+flipbookConfigs.forEach((config) => {
+  document.querySelectorAll(config.root).forEach((root) => {
+    createPdfFlipbook(root, {
+      pdfUrl: root.dataset.pdfUrl || config.pdfUrl
+    });
+  });
 });
-
-document.addEventListener("keydown", (event) => {
-  if (!pageFlip) return;
-
-  if (event.key === "ArrowLeft") {
-    pageFlip.flipPrev();
-  }
-
-  if (event.key === "ArrowRight") {
-    pageFlip.flipNext();
-  }
-
-  if ((event.ctrlKey || event.metaKey) && event.key === "+") {
-    event.preventDefault();
-    setZoom(zoomLevel + zoomStep);
-  }
-
-  if ((event.ctrlKey || event.metaKey) && event.key === "-") {
-    event.preventDefault();
-    setZoom(1);
-  }
-
-  if ((event.ctrlKey || event.metaKey) && event.key === "0") {
-    event.preventDefault();
-    setZoom(1);
-  }
-});
-
-renderPdfToFlipbook(pdfUrl);

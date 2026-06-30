@@ -78,6 +78,17 @@ body {
   overflow: hidden;
 }
 
+.book-container {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  width: 100%;
+}
+
+.book-container > * {
+  min-width: 0;
+}
+
 .toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -200,7 +211,7 @@ button:disabled,
   opacity: 0.9;
 }
 
-#status {
+.status {
   min-height: 1.5rem;
   font-size: 0.95rem;
   color: var(--muted);
@@ -238,6 +249,10 @@ button:disabled,
   display: none;
 }
 
+.book-nav-btn:disabled {
+  display: none;
+}
+
 .book-loading {
   position: absolute;
   inset: 0;
@@ -260,14 +275,17 @@ button:disabled,
   opacity: 0.5;
 }
 
-#flipbook {
+.flipbook-viewport {
+  width: 100%;
+  display: flex;
+  justify-content: center;
   transform: translate(var(--flipbook-pan-x, 0px), var(--flipbook-pan-y, 0px)) scale(var(--flipbook-zoom, 1));
   transform-origin: center center;
   transition: transform 0.2s ease;
   will-change: transform;
 }
 
-.book-shell.is-zoomed #flipbook {
+.book-shell.is-zoomed .flipbook-viewport {
   transition: none;
 }
 
@@ -277,17 +295,17 @@ button:disabled,
   z-index: 2;
   width: 90px;
   height: 90px;
-  border: 1px solid var(--fgcu-dark-gray);
+  border: 1px solid #0000000d;
   border-radius: 50%;
-  background: var(--fgcu-dark-gray);
+  background: #65748547;
   color: #fff;
-  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 0px 30px rgb(25 26 49 / 38%);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: 4.2rem;
   font-weight: 700;
-  padding: 0px 0px 6px 0px;
+  padding: 0;
   line-height: 1;
 }
 
@@ -297,14 +315,18 @@ button:disabled,
 
 .book-nav-btn.left {
   left: 0.75rem;
-  background: var(--fgcu-dark-gray);
-  border-color: var(--fgcu-dark-gray);
+}
+
+.book-nav-btn.left {
+  padding-right: 0.12em;
 }
 
 .book-nav-btn.right {
   right: 0.75rem;
-  background: var(--fgcu-dark-gray);
-  border-color: var(--fgcu-dark-gray);
+}
+
+.book-nav-btn.right {
+  padding-left: 0.12em;
 }
 
 .book-nav-btn.left:hover {
@@ -349,11 +371,11 @@ button:disabled,
   border-color: green;
 }
 
-#flipbook {
+.flipbook-viewport {
   position: relative;
   z-index: 1;
   margin: 0 auto;
-  border: 40px solid var(--gray-accent);
+  /* border: 40px solid var(--gray-accent); */
 }
 
 .page {
@@ -406,6 +428,10 @@ button:disabled,
     background: transparent;
   }
 
+  .book-container {
+    grid-template-columns: 1fr;
+  }
+
   .cover-overlay {
     display: block;
   }
@@ -426,7 +452,7 @@ button:disabled,
     text-align: center;
   }
 
-  #status {
+  .status {
     width: 100%;
     margin-left: 0;
   }

@@ -14,60 +14,17 @@
 <body>
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <main class="page-wrapper" id="main-content">
-    <section class="intro" aria-labelledby="book-title">
-      <h1 id="book-title">FGCU - proof of concept - FlipBook</h1>
-      <p>
-        This demo loads <strong>FFSS.pdf</strong> by default, renders each page with PDF.js,
-        and displays the pages in an open-source page-flip interface.
-      </p>
-    </section>
+    <h1 id="book-title">FGCU - proof of concept - FlipBook</h1>
 
-    <div class="book-frame">
-      <div class="book-topbar" role="group" aria-label="Book top controls">
-        <button type="button" id="fullscreenBtn" aria-controls="flipbook" aria-label="Toggle fullscreen view">Fullscreen</button>
+    <div class="pdf-flipbook" data-pdf-url="Annual_Report_Concept_Windows_v3_spreads 1.pdf"></div>
+    <div class="pdf-flipbook" data-pdf-url="FFSS.pdf"></div>
 
-        <a class="pdf-link" href="FFSS.pdf" target="_blank" rel="noopener noreferrer" aria-label="Open the PDF in a new tab">
-          Open Accessible PDF
-        </a>
-      </div>
 
-      <div class="status-wrapper status-wrapper--top" aria-hidden="true">
-        &nbsp;
-      </div>
-      <section class="book-shell" role="region" aria-label="PDF flipbook viewer" aria-describedby="flipbook-help">
-        <div class="book-loading" id="bookLoading" aria-hidden="true">
-          <img src="images/loading-bar-book.gif" alt="" />
-        </div>
-        <button type="button" class="book-nav-btn left" id="bookPrevBtn" aria-label="Previous page">←</button>
-        <button type="button" class="book-nav-btn right" id="bookNextBtn" aria-label="Next page">→</button>
-        <div class="cover-overlay" aria-hidden="true">
-          <div class="cover-zone left"></div>
-          <div class="cover-zone right"></div>
-        </div>
-        <p id="flipbook-help" class="sr-only">Use the previous and next buttons or the left and right arrow keys to move through the book.</p>
-        <div id="flipbook" role="group" aria-label="Flipbook pages" tabindex="0"></div>
-      </section>
-      <div class="status-wrapper status-wrapper--bottom" role="status" aria-live="polite" aria-atomic="true">
-        <span id="status">Loading PDF…</span>
-      </div>
-
-      <div class="toolbar" role="group" aria-label="Flipbook controls">
-        <div class="zoom-group">
-          <button type="button" class="zoom-btn" id="zoomOutBtn" aria-label="Zoom out">−</button>
-          <button type="button" class="zoom-btn" id="zoomInBtn" aria-label="Zoom in">+</button>
-          <button type="button" class="zoom-btn zoom-btn--text" id="resetZoomBtn" aria-label="Reset zoom">Reset zoom</button>
-        </div>
-        <div class="page-group">
-          <button type="button" id="prevBtn" aria-controls="flipbook">Previous Page</button>
-          <button type="button" id="nextBtn" aria-controls="flipbook">Next Page</button>
-        </div>
-      </div>
+    <div class="book-container">
+      <div class="pdf-flipbook" data-pdf-url="Annual_Report_Concept_Windows_v3_spreads 1.pdf"></div>
+      <div class="pdf-flipbook" data-pdf-url="FFSS.pdf"></div>
     </div>
 
-    <p class="fallback-note">
-      <strong>Accessibility note:</strong> this flipbook is a visual enhancement. Keep the
-      direct PDF link available, and make sure the source PDF itself remains accessible.
-    </p>
   </main>
 
   <!-- StPageFlip / page-flip -->
