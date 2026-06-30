@@ -3,7 +3,8 @@ import * as pdfjsLib from "./vendor/pdfjs-dist/pdf.min.mjs";
 pdfjsLib.GlobalWorkerOptions.workerSrc = "./vendor/pdfjs-dist/pdf.worker.min.mjs";
 
 // Default PDF. Keep this HTML file and FFSS.pdf in the same folder.
-const pdfUrl = "FFSS.pdf";
+const pdfUrl = "Annual_Report_Concept_Windows_v3_spreads 1.pdf";
+//const pdfUrl = "FFSS.pdf"; 
 
 const flipbookEl = document.getElementById("flipbook");
 const statusEl = document.getElementById("status");
@@ -17,6 +18,7 @@ const zoomInBtn = document.getElementById("zoomInBtn");
 const fullscreenBtn = document.getElementById("fullscreenBtn");
 const bookShell = document.querySelector(".book-shell");
 const coverZones = document.querySelectorAll(".cover-zone");
+const bookLoadingEl = document.getElementById("bookLoading");
 
 let pageFlip = null;
 let zoomLevel = 1;
@@ -27,23 +29,38 @@ let dragStartX = 0;
 let dragStartY = 0;
 let dragOriginX = 0;
 let dragOriginY = 0;
+const activeTouchPointers = new Map();
+let pinchStartDistance = 0;
+let pinchStartZoom = 1;
 const minZoom = 1;
-const maxZoom = 1.6;
+const maxZoom = 5;
+const zoomStep = 0.1;
+const defaultPageAspectRatio = 420 / 594;
+let maxPageAspectRatio = defaultPageAspectRatio;
 
 async function renderPdfToFlipbook(url) {
   try {
+    bookLoadingEl.classList.remove("is-hidden");
     const loadingTask = pdfjsLib.getDocument(url);
     const pdf = await loadingTask.promise;
 
     statusEl.textContent = `Rendering ${pdf.numPages} pages…`;
 
     const pages = [];
+    maxPageAspectRatio = defaultPageAspectRatio;
 
     for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
       const page = await pdf.getPage(pageNumber);
 
       // Scale controls render sharpness. Higher values are sharper but heavier.
-      const viewport = page.getViewport({ scale: 1.6 });
+      const viewport = page.getViewport({ scale: 2 });
+      //const viewport = page.getViewport({ scale: 1.6 });
+      //const viewport = page.getViewport({ scale: 1 });
+
+      const currentPageAspectRatio = viewport.width / viewport.height;
+      if (currentPageAspectRatio > maxPageAspectRatio) {
+        maxPageAspectRatio = currentPageAspectRatio;
+      }
 
       const canvas = document.createElement("canvas");
       const context = canvas.getContext("2d", { alpha: false });
@@ -65,10 +82,12 @@ async function renderPdfToFlipbook(url) {
       pages.push(pageDiv);
     }
 
-    initializeFlipbook(pages);
+    initializeFlipbook(pages, maxPageAspectRatio);
+    bookLoadingEl.classList.add("is-hidden");
     updateStatus();
   } catch (error) {
     console.error(error);
+    bookLoadingEl.classList.add("is-hidden");
     statusEl.textContent = "Could not load the PDF.";
     flipbookEl.innerHTML = `
       <div class="error" role="alert">
@@ -80,7 +99,11 @@ async function renderPdfToFlipbook(url) {
   }
 }
 
-function initializeFlipbook(pages) {
+function getPageHeightForWidth(width, pageAspectRatio) {
+  return Math.round(width / pageAspectRatio);
+}
+
+function initializeFlipbook(pages, pageAspectRatio) {
   flipbookEl.innerHTML = "";
 
   pages.forEach((page) => {
@@ -89,12 +112,12 @@ function initializeFlipbook(pages) {
 
   pageFlip = new St.PageFlip(flipbookEl, {
     width: 420,
-    height: 594,
+    height: getPageHeightForWidth(420, pageAspectRatio),
     size: "stretch",
     minWidth: 280,
     maxWidth: 540,
-    minHeight: 396,
-    maxHeight: 764,
+    minHeight: getPageHeightForWidth(280, pageAspectRatio),
+    maxHeight: getPageHeightForWidth(540, pageAspectRatio),
     maxShadowOpacity: 0.35,
     showCover: false,
     mobileScrollSupport: false,
@@ -153,7 +176,73 @@ function setZoom(nextZoom) {
   updateStatus();
 }
 
+function getPointerDistance(pointerA, pointerB) {
+  return Math.hypot(pointerA.clientX - pointerB.clientX, pointerA.clientY - pointerB.clientY);
+}
+
+function updatePinchStart() {
+  if (activeTouchPointers.size < 2) return;
+
+  const pointers = Array.from(activeTouchPointers.values());
+  pinchStartDistance = getPointerDistance(pointers[0], pointers[1]);
+  pinchStartZoom = zoomLevel;
+}
+
+function handleWheelZoom(event) {
+  event.preventDefault();
+
+  const zoomDirection = event.deltaY < 0 ? 1 : -1;
+  setZoom(zoomLevel + zoomDirection * zoomStep);
+}
+
+function handleTouchPointerDown(event) {
+  if (event.pointerType !== "touch") return;
+
+  activeTouchPointers.set(event.pointerId, {
+    clientX: event.clientX,
+    clientY: event.clientY
+  });
+
+  if (activeTouchPointers.size === 2) {
+    isDragging = false;
+    bookShell.classList.remove("is-dragging");
+    updatePinchStart();
+  }
+}
+
+function handleTouchPointerMove(event) {
+  if (!activeTouchPointers.has(event.pointerId)) return;
+
+  activeTouchPointers.set(event.pointerId, {
+    clientX: event.clientX,
+    clientY: event.clientY
+  });
+
+  if (activeTouchPointers.size < 2 || pinchStartDistance <= 0) return;
+
+  const pointers = Array.from(activeTouchPointers.values());
+  const currentDistance = getPointerDistance(pointers[0], pointers[1]);
+  setZoom(pinchStartZoom * (currentDistance / pinchStartDistance));
+  event.preventDefault();
+}
+
+function handleTouchPointerEnd(event) {
+  if (!activeTouchPointers.delete(event.pointerId)) return;
+
+  if (activeTouchPointers.size >= 2) {
+    updatePinchStart();
+    return;
+  }
+
+  pinchStartDistance = 0;
+  pinchStartZoom = zoomLevel;
+}
+
 function handlePanStart(event) {
+  if (event.pointerType === "touch") {
+    return;
+  }
+
   if (!bookShell.classList.contains("is-zoomed") || event.button !== undefined && event.button !== 0) {
     return;
   }
@@ -212,7 +301,12 @@ nextBtn.addEventListener("click", () => flipPage("next"));
 bookNextBtn.addEventListener("click", () => flipPage("next"));
 zoomOutBtn.addEventListener("click", () => setZoom(1));
 resetZoomBtn.addEventListener("click", () => setZoom(1));
-zoomInBtn.addEventListener("click", () => setZoom(zoomLevel + 0.1));
+zoomInBtn.addEventListener("click", () => setZoom(zoomLevel + zoomStep));
+bookShell.addEventListener("wheel", handleWheelZoom, { passive: false });
+bookShell.addEventListener("pointerdown", handleTouchPointerDown);
+document.addEventListener("pointermove", handleTouchPointerMove);
+document.addEventListener("pointerup", handleTouchPointerEnd);
+document.addEventListener("pointercancel", handleTouchPointerEnd);
 bookShell.addEventListener("pointerdown", handlePanStart);
 document.addEventListener("pointermove", handlePanMove);
 document.addEventListener("pointerup", handlePanEnd);
@@ -260,7 +354,7 @@ document.addEventListener("keydown", (event) => {
 
   if ((event.ctrlKey || event.metaKey) && event.key === "+") {
     event.preventDefault();
-    setZoom(zoomLevel + 0.1);
+    setZoom(zoomLevel + zoomStep);
   }
 
   if ((event.ctrlKey || event.metaKey) && event.key === "-") {

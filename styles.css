@@ -238,6 +238,28 @@ button:disabled,
   display: none;
 }
 
+.book-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gray-accent);
+  pointer-events: none;
+}
+
+.book-loading.is-hidden {
+  display: none;
+}
+
+.book-loading img {
+  display: block;
+  max-width: min(130px, 30vw);
+  height: auto;
+  opacity: 0.5;
+}
+
 #flipbook {
   transform: translate(var(--flipbook-pan-x, 0px), var(--flipbook-pan-y, 0px)) scale(var(--flipbook-zoom, 1));
   transform-origin: center center;
