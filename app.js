@@ -151,9 +151,15 @@ class PdfFlipbook {
 
   bindEvents() {
     this.prevBtn?.addEventListener("click", () => this.flipPage("prev"));
-    this.bookPrevBtn?.addEventListener("click", () => this.flipPage("prev"));
+    this.bookPrevBtn?.addEventListener("click", () => {
+      this.setZoom(1);
+      this.flipPage("prev");
+    });
     this.nextBtn?.addEventListener("click", () => this.flipPage("next"));
-    this.bookNextBtn?.addEventListener("click", () => this.flipPage("next"));
+    this.bookNextBtn?.addEventListener("click", () => {
+      this.setZoom(1);
+      this.flipPage("next");
+    });
     this.resetZoomBtn?.addEventListener("click", () => this.setZoom(1));
     this.zoomRange?.addEventListener('input', (event) => {
       const v = parseFloat(event.target.value);

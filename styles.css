@@ -417,10 +417,6 @@ button:disabled,
   cursor: grabbing;
 }
 
-.book-shell.is-zoomed .book-nav-btn {
-  display: none;
-}
-
 .book-nav-btn:disabled {
   display: none;
 }
@@ -564,7 +560,8 @@ button:disabled,
 }
 
 .book-shell.is-zoomed .navigation-arrows__button {
-  display: none;
+  display: inline-flex;
+  z-index: 9999;
 }
 .book-nav-btn svg {
   width: 256px;
