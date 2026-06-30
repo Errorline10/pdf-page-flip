@@ -132,6 +132,18 @@ body {
   min-width: auto;
 }
 
+/* Range slider for zoom controls */
+.zoom-range {
+  width: 160px;
+  margin: 0 0.5rem;
+  accent-color: var(--fgcu-navy);
+}
+
+.zoom-range:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 .zoom-btn--text:hover {
   background: transparent;
   color: #002b4d;
@@ -455,11 +467,11 @@ button:disabled,
   z-index: 2;
   width: 90px;
   height: 90px;
-  border: 1px solid #0000000d;
+  border: none;
   border-radius: 50%;
   background: #65748547;
   color: #fff;
-  box-shadow: 0 0px 30px rgb(25 26 49 / 38%);
+  /* box-shadow: 0 0px 30px rgb(25 26 49 / 38%); */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -470,7 +482,7 @@ button:disabled,
 }
 
 .book-nav-btn:hover {
-  background: #6a737c;
+  background: #5e5e5e; /* lighter hover color */
 }
 
 .book-nav-btn:focus {
@@ -493,14 +505,81 @@ button:disabled,
   padding-left: 0.12em;
 }
 
-.book-nav-btn.left:hover {
-  background: #6a737c;
-  border-color: #6a737c;
+.book-nav-btn.left:hover,
+.book-nav-btn.right:hover {
+  background: #b1b1b1; /* lighter hover color */
 }
 
-.book-nav-btn.right:hover {
-  background: #6a737c;
-  border-color: #6a737c;
+.book-nav-btn svg {
+  width: 64px;
+  height: 64px;
+  display: block;
+  scale: 2;           
+
+}
+
+.navigation-arrows__button svg {
+  width: 96px;
+  height: 96px;
+  max-width: 100%;
+  display: block;
+  transform: rotate(180deg);
+  transform-origin: center;
+}
+
+/* FGCU-like circular navigation arrows (matching navigation-arrows__button) */
+.navigation-arrows__button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  width: 56px;
+  height: 200px;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--fgcu-navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0;
+  cursor: pointer;
+  transition: background-color 180ms ease, color 180ms ease, transform 180ms ease, border-color 180ms ease;
+}
+
+
+.navigation-arrows__button:focus {
+  outline: 0px solid rgba(253, 185, 19, 0.25);
+}
+
+
+/* Smaller, accessible chevrons if needed */
+.navigation-arrows__button svg {
+  width: 32px;
+  height: 32px;
+  display: block;
+  transform: rotate(180deg);
+  transform-origin: center;
+}
+
+.book-shell.is-zoomed .navigation-arrows__button {
+  display: none;
+}
+.book-nav-btn svg {
+  width: 256px;
+  height: 256px;
+  max-width: 100%;
+  display: block;
+}
+
+/* Flip the SVG for the left (previous) button */
+/* left-specific transform removed; both SVGs are rotated 180deg above */
+
+/* Restore no-rotation for the left arrow so it points correctly */
+.navigation-arrows__button--left svg {
+  transform: none;
+  transform-origin: center;
 }
 
 .cover-overlay {
@@ -539,7 +618,7 @@ button:disabled,
   position: relative;
   z-index: 1;
   margin: 0 auto;
-  /* border: 40px solid var(--gray-accent); */
+  border: 40px solid var(--gray-accent);
 }
 
 .page {
@@ -651,3 +730,4 @@ button:disabled,
     display: none;
   }
 }
+

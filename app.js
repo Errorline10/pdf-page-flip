@@ -1,6 +1,6 @@
-import * as pdfjsLib from "./pdfjs-dist/pdf.min.mjs";
+const pdfjsLib = await import(new URL("./pdfjs-dist/pdf.min.mjs", import.meta.url));
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdfjs-dist/pdf.worker.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("./pdfjs-dist/pdf.worker.min.mjs", import.meta.url).href;
 
 // Add more instances here, or set data-pdf-url on each .pdf-flipbook mount.
 const pdfUrl = "./Annual_Report_Concept_Windows_v3_spreads 1.pdf";
@@ -22,6 +22,7 @@ function escapeHtml(value) {
 
 function getPdfFlipbookTemplate(options = {}) {
   const pdfLinkUrl = escapeHtml(options.pdfLinkUrl || options.pdfUrl || "#");
+  const instId = String(options.instanceId || options.id || "zoom-range").replace(/[^a-zA-Z0-9_-]/g, "_");
 
   return `
     <div class="book-frame">
@@ -37,16 +38,20 @@ function getPdfFlipbookTemplate(options = {}) {
         </a>
         <div class="zoom-group" role="group" aria-label="Zoom controls">
           <button type="button" class="zoom-btn zoom-btn--text reset-zoom-btn" aria-label="Reset zoom">Zoom</button>
-          <button type="button" class="zoom-btn zoom-out-btn" aria-label="Zoom out">&minus;</button>
-          <button type="button" class="zoom-btn zoom-in-btn" aria-label="Zoom in">+</button>
+          <label class="zoom-range-label" for="zoom-range-${instId}"></label>
+          <input id="zoom-range-${instId}" class="zoom-range" type="range" min="1" max="5" step="0.1" value="1" aria-label="Zoom level" />
         </div>
       </div>
       <section class="book-shell" role="region" aria-label="PDF flipbook viewer">
         <div class="book-loading" aria-hidden="true">
           <img src="images/loading-bar-book.gif" alt="" />
         </div>
-        <button type="button" class="book-nav-btn book-prev-btn left" aria-label="Previous page">&lt;</button>
-        <button type="button" class="book-nav-btn book-next-btn right" aria-label="Next page">&gt;</button>
+        <button type="button" class="book-nav-btn book-prev-btn left navigation-arrows__button navigation-arrows__button--left" aria-label="Previous page">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" aria-hidden="true" focusable="false"><path fill="currentColor" d="M41.36 46.12c.3.32.45.48.45.68 0 .2-.15.36-.45.68l-2.57 2.74c-.34.37-.51.55-.73.55-.21 0-.39-.18-.73-.55L24.64 36.68c-.3-.32-.45-.48-.45-.68 0-.2.15-.36.45-.68l12.7-13.54c.33-.37.5-.55.72-.55.22 0 .39.18.73.55l2.57 2.74c.3.32.45.48.45.68 0 .2-.15.36-.45.68L31.88 36l9.48 10.12Z"></path></svg>
+        </button>
+        <button type="button" class="book-nav-btn book-next-btn right navigation-arrows__button navigation-arrows__button--right" aria-label="Next page">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" aria-hidden="true" focusable="false"><path fill="currentColor" d="M41.36 46.12c.3.32.45.48.45.68 0 .2-.15.36-.45.68l-2.57 2.74c-.34.37-.51.55-.73.55-.21 0-.39-.18-.73-.55L24.64 36.68c-.3-.32-.45-.48-.45-.68 0-.2.15-.36.45-.68l12.7-13.54c.33-.37.5-.55.72-.55.22 0 .39.18.73.55l2.57 2.74c.3.32.45.48.45.68 0 .2-.15.36-.45.68L31.88 36l9.48 10.12Z"></path></svg>
+        </button>
         <div class="cover-overlay" aria-hidden="true">
           <div class="cover-zone left"></div>
           <div class="cover-zone right"></div>
@@ -83,7 +88,7 @@ class PdfFlipbook {
     this.bookNextBtn = root.querySelector(".book-next-btn");
     this.zoomOutBtn = root.querySelector(".zoom-out-btn");
     this.resetZoomBtn = root.querySelector(".reset-zoom-btn");
-    this.zoomInBtn = root.querySelector(".zoom-in-btn");
+    this.zoomRange = root.querySelector('.zoom-range');
     this.fullscreenBtn = root.querySelector(".fullscreen-btn");
     this.bookShell = root.querySelector(".book-shell");
     this.coverZones = root.querySelectorAll(".cover-zone");
@@ -99,7 +104,6 @@ class PdfFlipbook {
     this.dragStartY = 0;
     this.dragOriginX = 0;
     this.dragOriginY = 0;
-    this.isWheelZoomEnabled = false;
     this.activeTouchPointers = new Map();
     this.pinchStartDistance = 0;
     this.pinchStartZoom = 1;
@@ -118,7 +122,8 @@ class PdfFlipbook {
   renderTemplate() {
     this.root.innerHTML = getPdfFlipbookTemplate({
       pdfUrl: this.pdfUrl,
-      pdfLinkUrl: this.pdfLinkUrl
+      pdfLinkUrl: this.pdfLinkUrl,
+      instanceId: this.instanceId
     });
   }
 
@@ -149,14 +154,14 @@ class PdfFlipbook {
     this.bookPrevBtn?.addEventListener("click", () => this.flipPage("prev"));
     this.nextBtn?.addEventListener("click", () => this.flipPage("next"));
     this.bookNextBtn?.addEventListener("click", () => this.flipPage("next"));
-    this.zoomOutBtn?.addEventListener("click", () => this.setZoom(1));
     this.resetZoomBtn?.addEventListener("click", () => this.setZoom(1));
-    this.zoomInBtn?.addEventListener("click", () => this.setZoom(this.zoomLevel + this.zoomStep));
+    this.zoomRange?.addEventListener('input', (event) => {
+      const v = parseFloat(event.target.value);
+      if (!Number.isNaN(v)) this.setZoom(v);
+    });
     this.fullscreenBtn?.addEventListener("click", () => this.toggleFullscreen());
 
-    this.bookShell?.addEventListener("wheel", (event) => this.handleWheelZoom(event), { passive: false });
-    this.bookShell?.addEventListener("click", () => this.enableWheelZoom());
-    this.bookShell?.addEventListener("focusin", () => this.enableWheelZoom());
+    // Wheel zoom and activation via click/focus removed per request
     this.bookShell?.addEventListener("pointerdown", (event) => this.handleTouchPointerDown(event));
     this.bookShell?.addEventListener("pointerdown", (event) => this.handlePanStart(event));
     this.root.addEventListener("keydown", (event) => this.handleKeydown(event));
@@ -304,11 +309,21 @@ class PdfFlipbook {
   updateZoomButtons() {
     const isDefaultZoom = this.zoomLevel === 1;
 
-    this.zoomOutBtn.disabled = this.zoomLevel <= this.minZoom;
-    this.zoomInBtn.disabled = this.zoomLevel >= this.maxZoom;
+    if (this.zoomOutBtn) this.zoomOutBtn.disabled = this.zoomLevel <= this.minZoom;
+    if (this.zoomInBtn) this.zoomInBtn.disabled = this.zoomLevel >= this.maxZoom;
     this.resetZoomBtn.disabled = isDefaultZoom;
     this.resetZoomBtn.textContent = isDefaultZoom ? "Zoom" : "Reset zoom";
     this.resetZoomBtn.classList.toggle("is-zoomed", !isDefaultZoom);
+    if (this.zoomRange) {
+      try {
+        this.zoomRange.value = String(this.zoomLevel);
+        this.zoomRange.min = String(this.minZoom);
+        this.zoomRange.max = String(this.maxZoom);
+        this.zoomRange.step = String(this.zoomStep);
+      } catch (e) {
+        // ignore if properties unsupported
+      }
+    }
   }
 
   applyTransform() {
@@ -344,20 +359,6 @@ class PdfFlipbook {
     this.pinchStartZoom = this.zoomLevel;
   }
 
-  enableWheelZoom() {
-    this.isWheelZoomEnabled = true;
-  }
-
-  handleWheelZoom(event) {
-    if (!this.isWheelZoomEnabled) {
-      return;
-    }
-
-    event.preventDefault();
-
-    const zoomDirection = event.deltaY < 0 ? 1 : -1;
-    this.setZoom(this.zoomLevel + zoomDirection * this.zoomStep);
-  }
 
   handleTouchPointerDown(event) {
     if (event.pointerType !== "touch") return;
