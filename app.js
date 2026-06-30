@@ -1,9 +1,9 @@
-import * as pdfjsLib from "/pdfjs-dist/pdf.min.mjs";
+import * as pdfjsLib from "./pdfjs-dist/pdf.min.mjs";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = "../pdfjs-dist/pdf.worker.min.mjs";
+pdfjsLib.GlobalWorkerOptions.workerSrc = "./pdfjs-dist/pdf.worker.min.mjs";
 
 // Add more instances here, or set data-pdf-url on each .pdf-flipbook mount.
-const pdfUrl = "./example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf";
+const pdfUrl = "./Annual_Report_Concept_Windows_v3_spreads 1.pdf";
 const flipbookConfigs = [
   {
     root: ".pdf-flipbook",
