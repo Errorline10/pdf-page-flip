@@ -229,10 +229,48 @@ class PdfFlipbook {
           viewport
         }).promise;
 
+        const annotations = await page.getAnnotations({ intent: "display" });
+        const linkOverlay = document.createElement("div");
+        linkOverlay.className = "pdf-link-overlays";
+
+        annotations.forEach((annotation) => {
+          if (annotation.subtype !== "Link") {
+            return;
+          }
+
+          const url = annotation.url || annotation.unsafeUrl;
+          if (!url) {
+            return;
+          }
+
+          const rect = viewport.convertToViewportRectangle(annotation.rect);
+          const [x1, y1, x2, y2] = rect;
+          const leftPercent = (Math.min(x1, x2) / viewport.width) * 100;
+          const topPercent = (Math.min(y1, y2) / viewport.height) * 100;
+          const widthPercent = (Math.abs(x1 - x2) / viewport.width) * 100;
+          const heightPercent = (Math.abs(y1 - y2) / viewport.height) * 100;
+
+          const linkEl = document.createElement("a");
+          linkEl.className = "pdf-link-overlay";
+          linkEl.href = url;
+          linkEl.target = "_blank";
+          linkEl.rel = "noopener noreferrer";
+          linkEl.style.left = `${leftPercent}%`;
+          linkEl.style.top = `${topPercent}%`;
+          linkEl.style.width = `${widthPercent}%`;
+          linkEl.style.height = `${heightPercent}%`;
+          linkEl.setAttribute("aria-label", annotation.altText || annotation.title || "PDF link");
+          linkEl.addEventListener("pointerdown", (event) => event.stopPropagation());
+          linkEl.addEventListener("click", (event) => event.stopPropagation());
+
+          linkOverlay.appendChild(linkEl);
+        });
+
         const pageDiv = document.createElement("div");
         pageDiv.className = "page";
         pageDiv.setAttribute("data-density", "soft");
         pageDiv.appendChild(canvas);
+        pageDiv.appendChild(linkOverlay);
 
         pages.push(pageDiv);
       }

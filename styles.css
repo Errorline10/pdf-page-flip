@@ -622,6 +622,30 @@ button:disabled,
   background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.16);
   overflow: hidden;
+  position: relative;
+}
+
+.pdf-link-overlays {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pdf-link-overlay {
+  position: absolute;
+  pointer-events: auto;
+  background: rgba(255, 255, 255, 0);
+  border: 1px solid transparent;  box-sizing: border-box;}
+
+.pdf-link-overlay {
+  z-index: 10;
+  border: 1px dashed rgba(253, 185, 19, 0.9);
+}
+
+.pdf-link-overlay:hover,
+.pdf-link-overlay:focus-visible {
+  outline: 2px solid rgba(253, 185, 19, 0.8);
+  background: rgba(253, 185, 19, 0.08);
 }
 
 .page canvas {
