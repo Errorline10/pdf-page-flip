@@ -1,15 +1,17 @@
-const pdfjsLib = await import(new URL("./pdfjs-dist/pdf.min.mjs", import.meta.url));
+const pdfjsLib = await import(new URL("./minifyed/pdf.min.mjs", import.meta.url));
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("./pdfjs-dist/pdf.worker.min.mjs", import.meta.url).href;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("./minifyed/pdf.worker.min.mjs", import.meta.url).href;
 
 // Add more instances here, or set data-pdf-url on each .pdf-flipbook mount.
-const pdfUrl = "./Annual_Report_Concept_Windows_v3_spreads 1.pdf";
+const pdfUrl = "../example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf";
 const flipbookConfigs = [
   {
     root: ".pdf-flipbook",
     pdfUrl
   }
 ];
+
+const loadingBarImageUrl = new URL("../images/loading-bar-book.gif", import.meta.url).href;
 
 function escapeHtml(value) {
   return String(value)
@@ -28,12 +30,10 @@ function getPdfFlipbookTemplate(options = {}) {
     <div class="book-frame">
       <div class="status-wrapper status-wrapper--top">
         <button type="button" class="fullscreen-btn icon-btn" aria-label="Toggle fullscreen view">
-          <img src="images/icon-full-screen.svg" alt="" aria-hidden="true" />
           <span>Full screen</span>
         </button>
         <span class="topbar-separator" aria-hidden="true">|</span>
         <a class="pdf-link icon-btn open-pdf-link" href="${pdfLinkUrl}" target="_blank" rel="noopener noreferrer" aria-label="Open the accessible PDF view in a new tab">
-          <img src="images/icon-open.svg" alt="" aria-hidden="true" />
           <span>Open Accessible View</span>
         </a>
         <div class="zoom-group" role="group" aria-label="Zoom controls">
@@ -44,7 +44,7 @@ function getPdfFlipbookTemplate(options = {}) {
       </div>
       <section class="book-shell" role="region" aria-label="PDF flipbook viewer">
         <div class="book-loading" aria-hidden="true">
-          <img src="images/loading-bar-book.gif" alt="" />
+          <img src="${loadingBarImageUrl}" alt="" />
         </div>
         <button type="button" class="book-nav-btn book-prev-btn left navigation-arrows__button navigation-arrows__button--left" aria-label="Previous page">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72" aria-hidden="true" focusable="false"><path fill="currentColor" d="M41.36 46.12c.3.32.45.48.45.68 0 .2-.15.36-.45.68l-2.57 2.74c-.34.37-.51.55-.73.55-.21 0-.39-.18-.73-.55L24.64 36.68c-.3-.32-.45-.48-.45-.68 0-.2.15-.36.45-.68l12.7-13.54c.33-.37.5-.55.72-.55.22 0 .39.18.73.55l2.57 2.74c.3.32.45.48.45.68 0 .2-.15.36-.45.68L31.88 36l9.48 10.12Z"></path></svg>
