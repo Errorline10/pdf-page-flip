@@ -238,10 +238,10 @@
           <ul class="file-list">
             <li><code>app.js</code></li>
             <li><code>styles.css</code></li>
-            <li><code>vendor/pdfjs-dist/pdf.min.mjs</code></li>
-            <li><code>vendor/pdfjs-dist/pdf.worker.min.mjs</code></li>
-            <li><code>vendor/page-flip/js/page-flip.browser.min.js</code></li>
-            <li><code>vendor/page-flip/css/page-flip.css</code></li>
+            <li><code>../tool/js/minifyed/pdf.min.mjs</code></li>
+            <li><code>../tool/js/minifyed/pdf.worker.min.mjs</code></li>
+            <li><code>../tool/js/page-flip.browser.min.js</code></li>
+            <li><code>../tool/css/page-flip.css</code></li>
             <li><code>images/loading-bar-book.gif</code>, <code>images/icon-open.svg</code>, and <code>images/icon-full-screen.svg</code></li>
           </ul>
         </section>
@@ -252,11 +252,11 @@
             Add the PageFlip stylesheet, the Flip-a-Thing stylesheet, PageFlip's browser build, and the Flip-a-Thing
             module script.
           </p>
-          <pre><code>&lt;link rel="stylesheet" href="vendor/page-flip/css/page-flip.css" /&gt;
-&lt;link rel="stylesheet" href="styles.css" /&gt;
+          <pre><code>&lt;link rel="stylesheet" href="../tool/css/page-flip.css" /&gt;
+&lt;link rel="stylesheet" href="../tool/css/styles.css" /&gt;
 
-&lt;script src="vendor/page-flip/js/page-flip.browser.min.js"&gt;&lt;/script&gt;
-&lt;script type="module" src="app.js"&gt;&lt;/script&gt;</code></pre>
+&lt;script src="../tool/js/page-flip.browser.min.js"&gt;&lt;/script&gt;
+&lt;script type="module" src="../tool/js/app.js"&gt;&lt;/script&gt;</code></pre>
         </section>
 
         <section class="guide-card" id="auto-init">
@@ -265,7 +265,7 @@
             The auto initializer looks for <code>.pdf-flipbook</code> elements and reads the PDF URL from
             <code>data-pdf-url</code>.
           </p>
-          <pre><code>&lt;div class="pdf-flipbook" data-pdf-url="./example-pdfs/FGCU_Classic.pdf"&gt;&lt;/div&gt;</code></pre>
+          <pre><code>&lt;div class="pdf-flipbook" data-pdf-url="../example-pdfs/FGCU_Classic.pdf"&gt;&lt;/div&gt;</code></pre>
           <div class="note">
             <p>
               The PDF path is relative to the HTML page where the viewer is mounted, not relative to
@@ -279,9 +279,9 @@
           <p>
             You can place multiple viewer mounts on the same page. Each one becomes an independent flipbook instance.
           </p>
-          <pre><code>&lt;div class="pdf-flipbook" data-pdf-url="./example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf"&gt;&lt;/div&gt;
-&lt;div class="pdf-flipbook" data-pdf-url="./example-pdfs/FFSS.pdf"&gt;&lt;/div&gt;
-&lt;div class="pdf-flipbook" data-pdf-url="./example-pdfs/FGCU_Classic.pdf"&gt;&lt;/div&gt;</code></pre>
+          <pre><code>&lt;div class="pdf-flipbook" data-pdf-url="../example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf"&gt;&lt;/div&gt;
+&lt;div class="pdf-flipbook" data-pdf-url="../example-pdfs/FFSS.pdf"&gt;&lt;/div&gt;
+&lt;div class="pdf-flipbook" data-pdf-url="../example-pdfs/FGCU_Classic.pdf"&gt;&lt;/div&gt;</code></pre>
         </section>
 
         <section class="guide-card" id="manual-api">
@@ -293,12 +293,12 @@
           <pre><code>&lt;div id="viewerMount"&gt;&lt;/div&gt;
 
 &lt;script type="module"&gt;
-  import { createPdfFlipbook } from "./app.js";
+  import { createPdfFlipbook } from "../tool/js/app.js";
 
   const mount = document.querySelector("#viewerMount");
   const viewer = createPdfFlipbook(mount, {
-    pdfUrl: "./example-pdfs/FGCU_Classic.pdf",
-    pdfLinkUrl: "./example-pdfs/FGCU_Classic.pdf"
+    pdfUrl: "../example-pdfs/FGCU_Classic.pdf",
+    pdfLinkUrl: "../example-pdfs/FGCU_Classic.pdf"
   });
 &lt;/script&gt;</code></pre>
         </section>

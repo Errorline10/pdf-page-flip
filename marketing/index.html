@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description"
+    content="Flip-a-Thing turns PDFs into polished, responsive flipbook viewers for reports, brochures, catalogs, and campus publications." />
+  <title>Flip-a-Thing PDF Viewer</title>
+  <link rel="stylesheet" href="../tool/css/page-flip.css" />
+  <link rel="stylesheet" href="../tool/css/styles.css" />
+
+  <script src="../tool/js/minifyed/page-flip.browser.min.js"></script>
+
+  <style>
+    :root {
+      --navy: #003865;
+      --gold: #fdb913;
+      --ink: #182635;
+      --muted: #657385;
+      --line: #dce3ea;
+      --paper: #ffffff;
+      --wash: #f4f7fb;
+      --green: #4f7942;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--wash);
+      line-height: 1.55;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .page-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(244, 247, 251, 0.92);
+      border-bottom: 1px solid rgba(0, 56, 101, 0.12);
+      backdrop-filter: blur(14px);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 70px;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-weight: 800;
+      text-decoration: none;
+      color: var(--navy);
+    }
+
+    .brand-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 2rem;
+      height: 2rem;
+      border-radius: 0.35rem;
+      background: var(--navy);
+      color: var(--gold);
+      font-weight: 900;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+    }
+
+    .hero {
+      min-height: calc(100vh - 70px);
+      display: grid;
+      grid-template-columns: minmax(0, 0.95fr) minmax(360px, 1.05fr);
+      gap: 3rem;
+      align-items: center;
+      padding: 3.5rem 0 4.5rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.75rem;
+      color: var(--green);
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 1.1rem;
+      color: var(--navy);
+      font-size: clamp(2.7rem, 7vw, 5.9rem);
+      line-height: 0.94;
+    }
+
+    .hero-copy {
+      max-width: 620px;
+    }
+
+    .hero-copy>p:not(.eyebrow) {
+      max-width: 540px;
+      color: var(--muted);
+      font-size: 1.16rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-top: 1.8rem;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 3rem;
+      padding: 0.8rem 1.1rem;
+      border: 1px solid var(--navy);
+      border-radius: 0.35rem;
+      text-decoration: none;
+      font-weight: 800;
+      transition: background-color 300ms ease, color 300ms ease, border-color 300ms ease;
+    }
+
+    .button.primary {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .button.secondary {
+      background: transparent;
+      color: var(--navy);
+    }
+
+    .button:hover {
+      background: #002b4d;
+      border-color: #002b4d;
+      color: #fff;
+    }
+
+    .button {
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .viewer-preview {
+      position: relative;
+      min-height: 580px;
+      padding: 2rem;
+      background: linear-gradient(160deg, #e7edf4, #ffffff 58%, #fff3cf);
+      border: 1px solid rgba(0, 56, 101, 0.16);
+      border-radius: 0.5rem;
+      overflow: hidden;
+      box-shadow: 0 24px 70px rgba(0, 56, 101, 0.16);
+    }
+
+    .mock-toolbar,
+    .mock-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .mock-tools {
+      display: flex;
+      gap: 0.45rem;
+    }
+
+    .mock-dot {
+      width: 1.9rem;
+      height: 1.9rem;
+      border: 1px solid rgba(0, 56, 101, 0.18);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    .mock-book {
+      position: relative;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      margin: 2.5rem auto;
+      width: min(100%, 620px);
+      aspect-ratio: 1.45;
+      perspective: 1000px;
+    }
+
+    .mock-page {
+      padding: 1.2rem;
+      background: var(--paper);
+      border: 1px solid #dde4ec;
+      box-shadow: 0 14px 35px rgba(24, 38, 53, 0.12);
+      overflow: hidden;
+    }
+
+    .mock-page:first-child {
+      border-radius: 0.35rem 0 0 0.35rem;
+    }
+
+    .mock-page:last-child {
+      border-radius: 0 0.35rem 0.35rem 0;
+      transform: rotateY(-5deg);
+      transform-origin: left center;
+    }
+
+    .mock-band {
+      height: 42%;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--navy), #3177a8);
+      border-radius: 0.25rem;
+    }
+
+    .mock-line {
+      height: 0.65rem;
+      margin-bottom: 0.6rem;
+      background: #dce3ea;
+      border-radius: 999px;
+    }
+
+    .mock-line.short {
+      width: 62%;
+    }
+
+    .mock-status {
+      justify-content: center;
+    }
+
+    .section {
+      padding: 4.5rem 0;
+      border-top: 1px solid rgba(0, 56, 101, 0.12);
+    }
+
+    .section-heading {
+      max-width: 720px;
+      margin-bottom: 2rem;
+    }
+
+    h2 {
+      margin-bottom: 0.75rem;
+      color: var(--navy);
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1;
+    }
+
+    .section-heading p {
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .feature {
+      min-height: 210px;
+      padding: 1.25rem;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 0.5rem;
+    }
+
+    .feature strong {
+      display: block;
+      margin-bottom: 0.65rem;
+      color: var(--navy);
+      font-size: 1.12rem;
+    }
+
+    .feature p {
+      color: var(--muted);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+      gap: 2rem;
+      align-items: start;
+    }
+
+    .steps {
+      display: grid;
+      gap: 0.75rem;
+      counter-reset: steps;
+    }
+
+    .step {
+      position: relative;
+      padding: 1.1rem 1.1rem 1.1rem 3.3rem;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 0.5rem;
+      counter-increment: steps;
+    }
+
+    .step::before {
+      content: counter(steps);
+      position: absolute;
+      left: 1rem;
+      top: 1.1rem;
+      display: grid;
+      place-items: center;
+      width: 1.65rem;
+      height: 1.65rem;
+      border-radius: 999px;
+      background: var(--gold);
+      color: var(--navy);
+      font-weight: 900;
+    }
+
+    .cta {
+      padding: 3rem;
+      background: var(--navy);
+      color: #fff;
+      border-radius: 0.5rem;
+    }
+
+    .cta h2 {
+      color: #fff;
+    }
+
+    .cta p {
+      max-width: 650px;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .cta .button {
+      border-color: var(--gold);
+      background: var(--gold);
+      color: var(--navy);
+    }
+
+    .footer {
+      padding: 2rem 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .viewer-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(14, 24, 38, 0.72);
+    }
+
+    .viewer-modal.is-open {
+      display: flex;
+    }
+
+    .viewer-dialog {
+      width: min(1180px, 100%);
+      max-height: min(92vh, 980px);
+      overflow: auto;
+      background: #f4f7fb;
+      border-radius: 0.5rem;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.35);
+    }
+
+    .viewer-dialog__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem;
+      border-bottom: 1px solid rgba(0, 56, 101, 0.14);
+    }
+
+    .viewer-dialog__header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+      line-height: 1.2;
+    }
+
+    .modal-close {
+      width: 2.25rem;
+      height: 2.25rem;
+      padding: 0;
+      border-radius: 999px;
+      border: 1px solid rgba(0, 56, 101, 0.2);
+      background: #fff;
+      color: var(--navy);
+      cursor: pointer;
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .viewer-dialog__body {
+      padding: 1rem;
+    }
+
+    .viewer-dialog__body .pdf-flipbook {
+      margin: 0;
+    }
+
+    .pdf-picker {
+      display: flex;
+      justify-content: center;
+      margin: 1.25rem auto 0;
+    }
+
+    .pdf-picker select {
+      width: min(680px, 100%);
+      min-height: 3.25rem;
+      padding: 0 1rem;
+      border: 1px solid rgba(0, 56, 101, 0.24);
+      border-radius: 0.35rem;
+      background: #fff;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    @media (max-width: 900px) {
+
+      .hero,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .viewer-preview {
+        min-height: auto;
+      }
+
+      .feature-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 620px) {
+      .nav {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 1rem 0;
+      }
+
+      .nav-links {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.6rem;
+      }
+
+      .hero {
+        padding-top: 2rem;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .viewer-preview,
+      .cta {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="page-shell nav">
+      <a class="brand" href="#top" aria-label="Flip-a-Thing home">
+        <span class="brand-mark">F</span>
+        <span>Flip-a-Thing</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary navigation">
+        <a href="#features">Features</a>
+        <a href="#workflow">Workflow</a>
+        <a href="./dev-index.html">Implementation guide</a>
+        <a href="#viewer-modal" data-open-viewer>Launch viewer</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="page-shell hero" id="top">
+      <div class="hero-copy">
+        <p class="eyebrow">Flip-a-Thing PDF Viewer</p>
+        <h1>Publish PDFs people actually want to flip through.</h1>
+        <p>Turn reports, brochures, catalogs, and campus publications into a polished browser-based flipbook with zoom,
+          fullscreen mode, page controls, and an accessible PDF view.</p>
+        <div class="actions">
+          <button class="button primary" type="button" data-open-viewer>Open the viewer</button>
+          <a class="button secondary" href="./dev-index.html">Implementation guide</a>
+        </div>
+      </div>
+
+      <div class="viewer-preview" aria-label="Flip-a-Thing interface preview">
+        <div class="mock-toolbar">
+          <span>Full screen | Open Accessible View</span>
+          <div class="mock-tools" aria-hidden="true">
+            <span class="mock-dot"></span>
+            <span class="mock-dot"></span>
+            <span class="mock-dot"></span>
+          </div>
+        </div>
+        <div class="mock-book" aria-hidden="true">
+          <div class="mock-page">
+            <div class="mock-band"></div>
+            <div class="mock-line"></div>
+            <div class="mock-line"></div>
+            <div class="mock-line short"></div>
+          </div>
+          <div class="mock-page">
+            <div class="mock-band"></div>
+            <div class="mock-line"></div>
+            <div class="mock-line short"></div>
+            <div class="mock-line"></div>
+          </div>
+        </div>
+        <div class="mock-status">Page 1 of 12 - Zoom 100%</div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="page-shell">
+        <div class="section-heading">
+          <p class="eyebrow">Designed for practical publishing</p>
+          <h2>A focused viewer for making PDF experiences feel modern.</h2>
+          <p>Inspired by interactive publishing platforms, Flip-a-Thing keeps the workflow lightweight: bring your PDF,
+            embed the viewer, and give readers a better way to browse.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature">
+            <strong>Page-flip presentation</strong>
+            <p>Give static PDFs a publication-style reading experience with animated page turning and visual navigation.
+            </p>
+          </article>
+          <article class="feature">
+            <strong>Reader controls</strong>
+            <p>Zoom, fullscreen, previous and next controls, and mouse or pinch gestures are built into each viewer
+              instance.</p>
+          </article>
+          <article class="feature">
+            <strong>Accessible escape hatch</strong>
+            <p>Each flipbook keeps a direct accessible PDF view available for assistive technology and standard document
+              workflows.</p>
+          </article>
+          <article class="feature">
+            <strong>Multiple viewers</strong>
+            <p>Drop multiple instances onto the same page and point each one at a different PDF without ID collisions.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="workflow">
+      <div class="page-shell split">
+        <div class="section-heading">
+          <p class="eyebrow">Simple setup</p>
+          <h2>From PDF file to embedded flipbook in three moves.</h2>
+          <p>Use it for marketing documents, annual reports, student materials, product sheets, or internal publications
+            that deserve a richer first impression.</p>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <strong>Add the viewer files.</strong>
+            <p>Include the Flip-a-Thing JavaScript, stylesheet, PageFlip, and PDF.js assets in your project.</p>
+          </div>
+          <div class="step">
+            <strong>Place a mount element.</strong>
+            <p>Add a simple element with a PDF URL. The viewer builds its own interface from the template.</p>
+          </div>
+          <div class="step">
+            <strong>Publish the page.</strong>
+            <p>Readers get a polished flipbook, fullscreen mode, zoom controls, and a direct accessible PDF option.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="page-shell cta">
+        <p class="eyebrow">Ready to try it?</p>
+        <h2>Launch the local Flip-a-Thing demo.</h2>
+        <p>Open the viewer page and test it with the bundled sample PDFs.</p>
+        <div class="actions">
+          <button class="button" type="button" data-open-viewer>Open Flip-a-Thing</button>
+          <a class="button" href="../example-pdfs/">View example PDFs</a>
+          <a class="button" href="./index.html">Read implementation guide</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="page-shell">
+        <h2>Inline Examples</h2>
+
+        <div class="pdf-flipbook" data-pdf-url="../example-pdfs/FGCU_Classic.pdf"></div>
+        <div class="pdf-flipbook" data-pdf-url="../example-pdfs/FFSS.pdf"></div>
+
+      </div>
+    </section>
+
+
+
+
+  </main>
+
+
+
+
+
+
+
+
+  <footer class="page-shell footer">
+    <p>Flip-a-Thing PDF Viewer. Interactive PDF presentation for modern websites.</p>
+  </footer>
+
+  <div class="viewer-modal" id="viewer-modal" aria-hidden="true">
+    <div class="viewer-dialog" role="dialog" aria-modal="true" aria-labelledby="viewer-modal-title">
+      <div class="viewer-dialog__header">
+        <h2 id="viewer-modal-title">Flip-a-Thing viewer</h2>
+        <button class="modal-close" type="button" aria-label="Close viewer" data-close-viewer>&times;</button>
+      </div>
+      <div class="viewer-dialog__body">
+        <div id="modalViewerMount"></div>
+        <div class="pdf-picker">
+          <select id="pdfSelect" aria-label="Choose a PDF to preview">
+            <option value="../example-pdfs/FGCU_Classic.pdf">FGCU Classic</option>
+            <option value="../example-pdfs/Annual_Report_Concept_Windows_v3_spreads 1.pdf">Annual Report Concept</option>
+            <option value="../example-pdfs/FFSS.pdf">FFSS</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <script type="module">
+    import { createPdfFlipbook } from "../tool/js/app.js";
+
+    const modal = document.getElementById("viewer-modal");
+    const mount = document.getElementById("modalViewerMount");
+    const select = document.getElementById("pdfSelect");
+    const openButtons = document.querySelectorAll("[data-open-viewer]");
+    const closeButton = document.querySelector("[data-close-viewer]");
+
+    function loadSelectedPdf() {
+      mount.innerHTML = "";
+      createPdfFlipbook(mount, {
+        pdfUrl: select.value,
+        pdfLinkUrl: select.value
+      });
+    }
+
+    function openViewer(event) {
+      event?.preventDefault();
+      modal.classList.add("is-open");
+      modal.setAttribute("aria-hidden", "false");
+      loadSelectedPdf();
+    }
+
+    function closeViewer() {
+      modal.classList.remove("is-open");
+      modal.setAttribute("aria-hidden", "true");
+      mount.innerHTML = "";
+    }
+
+    openButtons.forEach((button) => {
+      button.addEventListener("click", openViewer);
+    });
+
+    closeButton.addEventListener("click", closeViewer);
+    select.addEventListener("change", loadSelectedPdf);
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) {
+        closeViewer();
+      }
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && modal.classList.contains("is-open")) {
+        closeViewer();
+      }
+    });
+  </script>
+</body>
+
+</html>
